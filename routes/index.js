@@ -5,7 +5,15 @@ var MongoClient = require('mongodb').MongoClient;
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.send({});
+    MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
+        var collection = db.collection('workings');
+
+        collection.find({}, {company: 1}).toArray(function(err, docs) {
+            db.close();
+
+            res.send(docs);
+        });
+    });
 });
 
 router.post('/', function(req, res, next) {
