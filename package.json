@@ -1,0 +1,25 @@
+{
+  "name": "goodjob",
+  "version": "1.0.0",
+  "description": "GoodJob",
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goodjoblife/WorkTimeSurvey-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/goodjoblife/WorkTimeSurvey-backend/issues"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.1",
+    "debug": "^2.2.0",
+    "express": "^4.13.4",
+    "morgan": "^1.7.0"
+  },
+  "devDependencies": {
+  }
+}
