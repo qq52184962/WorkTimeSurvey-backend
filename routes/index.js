@@ -6,6 +6,11 @@ var MongoClient = require('mongodb').MongoClient;
 /* GET home page. */
 router.get('/', function(req, res, next) {
     MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
+        if (err) {
+            res.send({
+                status: "error"
+            });
+        }
         var collection = db.collection('workings');
 
         collection.find({}, {company: 1}).toArray(function(err, docs) {
