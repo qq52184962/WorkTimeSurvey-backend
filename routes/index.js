@@ -23,9 +23,11 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     var access_token = req.body.access_token;
+    var email = req.body.email;
     var
-        company = req.body.company,
-        title = req.body.title,
+        company_name = req.body.company_name,
+        company_id = req.body.company_id,
+        job_title = req.body.job_title,
         worktime = req.body.worktime,
         salary = req.body.salary,
         workyear = req.body.workyear;
@@ -47,10 +49,12 @@ router.post('/', function(req, res, next) {
                 author: {
                     id: content.id,
                     name: content.name,
+                    email: email,
                     type: 'facebook',
                 },
-                company: company,
-                title: title,
+                company_name: company_name,
+                company_id: company_id,
+                job_title: job_title,
                 worktime: worktime,
                 salary: salary,
                 workyear: workyear,
