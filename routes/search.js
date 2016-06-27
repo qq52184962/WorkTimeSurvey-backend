@@ -25,6 +25,7 @@ router.get('/', function(req, res, next) {
         collection.find(q).skip(25 * page).limit(25).toArray(function(err, docs) {
             db.close();
 
+            res.header("Access-Control-Allow-Origin", "*");
             res.send(docs);
         });
     });
