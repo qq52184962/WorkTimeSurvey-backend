@@ -13,13 +13,13 @@ router.use(function(req, res, next) {
 router.get('/', function(req, res, next) {
     MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
         if (err) {
-            res.send({
-                status: "error"
-            });
+            next(createError("Internal Server Error", 500));
+
+            return;
         }
         var collection = db.collection('workings');
 
-        collection.find({}, {company: 1}).toArray(function(err, docs) {
+        collection.find({}, {company_id: 1, company_name: 1, week_work_time: 1}).toArray(function(err, docs) {
             db.close();
 
             res.send(docs);
@@ -86,9 +86,12 @@ router.post('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    var author = {
-        email: req.body.email,
-    };
+    var author = {};
+
+    if (req.body.email && (typeof req.body.email === "string") && req.body.email !== "") {
+        author.email = req.body.email;
+    }
+
     if (req.facebook) {
         author.id = req.facebook.id,
         author.name = req.facebook.name,
@@ -98,24 +101,39 @@ router.post('/', function(req, res, next) {
     }
 
     var data = {
-        author         : author,
-        company_name   : req.body.company_name,
-        company_id     : req.body.company_id,
-        job_title      : req.body.job_title,
-        week_work_time : req.body.week_work_time,
+        author: author,
     };
-    if ((! req.body.company_name) && (! req.body.company_id)) {
-        next(createError("company is required", 429));
 
-        return;
-    }
-    if (! req.body.job_title) {
-        next(createError("job_title is required", 429));
+    // pick these fields only
+    // make sure the field is string
+    [
+        "job_title", "week_work_time",
+        "company_id", "company_name",
+        "salary_min", "salary_max", "salary_type",
+        "work_year", "review",
+    ].forEach(function(field, i) {
+        if (req.body[field] && (typeof req.body[field] === "string") && req.body[field] !== "") {
+            data[field] = req.body[field];
+        }
+    });
 
-        return;
-    }
-    if (! req.body.week_work_time) {
-        next(createError("week_work_time is required", 429));
+    try {
+        if (! data.job_title) {
+            throw createError("job_title is required", 422);
+        }
+        if (! data.week_work_time) {
+            throw createError("week_work_time is required", 422);
+        }
+        data.week_work_time = parseInt(data.week_work_time);
+        if (isNaN(data.week_work_time)) {
+            throw createError("week_work_time need to be a number", 422);
+        }
+
+        if (! (data.company_id || data.company_id)) {
+            throw createError("company_id or company_name is required", 422);
+        }
+    } catch (err) {
+        next(err);
 
         return;
     }
@@ -141,43 +159,6 @@ router.post('/', function(req, res, next) {
 
             res.header("Access-Control-Allow-Origin", "*");
             res.send(data);
-        });
-    });
-});
-
-router.post('/:working_id', function(req, res, next) {
-    var fields = ["salary_min", "salary_max", "salary_type", "work_year", "review"];
-    var data = {};
-
-    fields.forEach(function(field, i) {
-        if (req.body[field]) {
-            data[field] = req.body[field];
-        }
-    });
-
-    console.log(data);
-
-    MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
-        var collection = db.collection('workings');
-
-        collection.updateOne({_id: ObjectId(req.params.working_id)}, {$set: data}, function(err, result) {
-            db.close();
-
-            res.header("Access-Control-Allow-Origin", "*");
-            res.send(data);
-        });
-    });
-});
-
-router.get('/:working_id', function(req, res, next) {
-    MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
-        var collection = db.collection('workings');
-
-        collection.find({_id: ObjectId(req.params.working_id)}, {author: 0}).toArray(function(err, docs) {
-            db.close();
-
-            res.header("Access-Control-Allow-Origin", "*");
-            res.send(docs);
         });
     });
 });
