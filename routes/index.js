@@ -86,9 +86,12 @@ router.post('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    var author = {
-        email: req.body.email,
-    };
+    var author = {};
+
+    if (req.body.email && (typeof req.body.email === "string") && req.body.email !== "") {
+        author.email = req.body.email;
+    }
+
     if (req.facebook) {
         author.id = req.facebook.id,
         author.name = req.facebook.name,
@@ -98,24 +101,39 @@ router.post('/', function(req, res, next) {
     }
 
     var data = {
-        author         : author,
-        company_name   : req.body.company_name,
-        company_id     : req.body.company_id,
-        job_title      : req.body.job_title,
-        week_work_time : req.body.week_work_time,
+        author: author,
     };
-    if ((! req.body.company_name) && (! req.body.company_id)) {
-        next(createError("company is required", 429));
 
-        return;
-    }
-    if (! req.body.job_title) {
-        next(createError("job_title is required", 429));
+    // pick these fields only
+    // make sure the field is string
+    [
+        "job_title", "week_work_time",
+        "company_id", "company_name",
+        "salary_min", "salary_max", "salary_type",
+        "work_year", "review",
+    ].forEach(function(field, i) {
+        if (req.body[field] && (typeof req.body[field] === "string") && req.body[field] !== "") {
+            data[field] = req.body[field];
+        }
+    });
 
-        return;
-    }
-    if (! req.body.week_work_time) {
-        next(createError("week_work_time is required", 429));
+    try {
+        if (! data.job_title) {
+            throw createError("job_title is required", 422);
+        }
+        if (! data.week_work_time) {
+            throw createError("week_work_time is required", 422);
+        }
+        data.week_work_time = parseInt(data.week_work_time);
+        if (isNaN(data.week_work_time)) {
+            throw createError("week_work_time need to be a number", 422);
+        }
+
+        if (! (data.company_id || data.company_id)) {
+            throw createError("company_id or company_name is required", 422);
+        }
+    } catch (err) {
+        next(err);
 
         return;
     }
