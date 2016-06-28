@@ -58,12 +58,20 @@ router.post('/', function(req, res, next) {
             }
         }, function(error, response, body) {
             if (error) {
+                console.log("request error");
                 next(createError("access_token is invalid", 401));
 
                 return;
             }
 
             var content = JSON.parse(body);
+
+            if (content.error) {
+                console.log("request response with error field");
+                next(createError("access_token is invalid", 401));
+
+                return;
+            }
 
             req.facebook = {id: content.id, name: content.name};
 
