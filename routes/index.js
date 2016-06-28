@@ -163,41 +163,4 @@ router.post('/', function(req, res, next) {
     });
 });
 
-router.post('/:working_id', function(req, res, next) {
-    var fields = ["salary_min", "salary_max", "salary_type", "work_year", "review"];
-    var data = {};
-
-    fields.forEach(function(field, i) {
-        if (req.body[field]) {
-            data[field] = req.body[field];
-        }
-    });
-
-    console.log(data);
-
-    MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
-        var collection = db.collection('workings');
-
-        collection.updateOne({_id: ObjectId(req.params.working_id)}, {$set: data}, function(err, result) {
-            db.close();
-
-            res.header("Access-Control-Allow-Origin", "*");
-            res.send(data);
-        });
-    });
-});
-
-router.get('/:working_id', function(req, res, next) {
-    MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
-        var collection = db.collection('workings');
-
-        collection.find({_id: ObjectId(req.params.working_id)}, {author: 0}).toArray(function(err, docs) {
-            db.close();
-
-            res.header("Access-Control-Allow-Origin", "*");
-            res.send(docs);
-        });
-    });
-});
-
 module.exports = router;
