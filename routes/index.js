@@ -129,7 +129,7 @@ router.post('/', function(req, res, next) {
             throw createError("week_work_time need to be a number", 422);
         }
 
-        if (! (data.company_id || data.company_id)) {
+        if (! (data.company_id || data.company_name)) {
             throw createError("company_id or company_name is required", 422);
         }
     } catch (err) {
