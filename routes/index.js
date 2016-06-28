@@ -4,6 +4,11 @@ var request = require('request');
 var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectId;
 
+router.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    next();
+});
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
     MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
