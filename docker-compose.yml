@@ -1,0 +1,18 @@
+node:
+    image: node
+    volumes:
+        - ./:/app
+    ports:
+        - "12000:3000"
+    links:
+        - mongo:mongo
+    working_dir: /app
+    command: npm start
+    environment:
+        - MONGODB_URI=mongodb://mongo/goodjob
+        - SKIP_FACEBOOK_AUTH=1
+        - NODE_ENV=development
+mongo:
+    image: mongo
+    volumes:
+        - ./db:/data/db
