@@ -84,6 +84,7 @@ router.post('/', function(req, res, next) {
 
     var data = {
         author: author,
+        created_at: new Date(),
     };
 
     // pick these fields only
