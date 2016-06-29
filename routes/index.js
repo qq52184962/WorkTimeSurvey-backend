@@ -9,27 +9,6 @@ router.use(function(req, res, next) {
     next();
 });
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-    var page = req.query.page || 0;
-    MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
-        if (err) {
-            next(createError("Internal Server Error", 500));
-
-            return;
-        }
-        var collection = db.collection('workings');
-
-        collection.find({}, {company_id: 1, company_name: 1, week_work_time: 1})
-            .skip(25 * page).limit(25)
-            .toArray(function(err, docs) {
-            db.close();
-
-            res.send(docs);
-        });
-    });
-});
-
 function createError(message, status) {
     var err = new Error(message);
     err.status = status;
