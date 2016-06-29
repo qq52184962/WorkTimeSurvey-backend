@@ -24,7 +24,7 @@ router.get('/', function(req, res, next) {
                 job_title: 1,
                 created_at: 1,
             };
-        collection.find(q, opt).skip(25 * page).limit(25).toArray(function(err, docs) {
+        collection.find(q, opt).sort({created_at: -1}).skip(25 * page).limit(25).toArray(function(err, docs) {
             if (err) {
                 next(createError("Internal Server Error", 500));
 
