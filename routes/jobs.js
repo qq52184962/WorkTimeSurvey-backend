@@ -27,8 +27,7 @@ router.get('/:job_title', function(req, res, next) {
             },
             {
                 $group: {
-                    _id: "$company_id",
-                    company_name: {$first: "$company_name"},
+                    _id: "$company",
                     week_work_times: {$push: "$week_work_time"},
                     average_week_work_time: {$avg: "$week_work_time"},
                     count: {$sum: 1},
