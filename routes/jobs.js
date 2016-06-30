@@ -14,10 +14,9 @@ router.use(cors);
 
 router.get('/:job_title', function(req, res, next) {
     var job_title = req.params.job_title;
-
-    console.log(job_title);
-
     var collection = db.get().collection('workings');
+
+    var page = req.query.page || 0;
 
     collectionAggregate(collection, [
         {
@@ -40,9 +39,12 @@ router.get('/:job_title', function(req, res, next) {
         },
         {
             $limit: 10,
-        }
-    ]).then(function(result) {
-        res.send(result);
+        },
+        {
+            $skip: page * 10,
+        },
+    ]).then(function(results) {
+        res.send(results);
     }).catch(function(err) {
         next(new HttpError("Internal Server Error", 500));
     });
