@@ -1,8 +1,10 @@
 var express = require('express');
 var router = express.Router();
 var MongoClient = require('mongodb').MongoClient;
+var cors = require('./cors');
 
-/* GET home page. */
+router.use(cors);
+
 router.get('/', function(req, res, next) {
     var search = req.query.key || "";
     var page = req.query.page || 0;
@@ -25,7 +27,6 @@ router.get('/', function(req, res, next) {
         collection.find(q).skip(25 * page).limit(25).toArray(function(err, docs) {
             db.close();
 
-            res.header("Access-Control-Allow-Origin", "*");
             res.send(docs);
         });
     });

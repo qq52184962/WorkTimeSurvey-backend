@@ -3,11 +3,9 @@ var router = express.Router();
 var request = require('request');
 var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectId;
+var cors = require('./cors');
 
-router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    next();
-});
+router.use(cors);
 
 function createError(message, status) {
     var err = new Error(message);
