@@ -5,6 +5,8 @@ var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectId;
 var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
+var mongoConnect = require('../libs/promiseit').mongoConnect;
+var collectionInsert = require('../libs/promiseit').collectionInsert;
 
 router.use(cors);
 
@@ -116,29 +118,22 @@ router.post('/', function(req, res, next) {
         }
     } catch (err) {
         next(err);
-
         return;
     }
 
-    MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
-        if (err) {
-            console.log("Connect to DB fail");
-            next(new HttpError("Internal Server Error", 500));
-            return;
-        }
-
+    mongoConnect().then(function(db) {
         var collection = db.collection('workings');
 
-        collection.insert(data, function(err, result) {
-            if (err) {
-                console.log("DB insert fail");
-                next(new HttpError("Internal Server Error", 500));
-                return;
-            }
+        return collectionInsert(collection, data).then(function(result) {
             db.close();
-
             res.send(data);
+        }).catch(function(err) {
+            db.close();
+            throw err;
         });
+    }).catch(function(err) {
+        console.log(err);
+        next(new HttpError("Internal Server Error", 500));
     });
 });
 

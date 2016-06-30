@@ -5,6 +5,9 @@ var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectId;
 var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
+var promiseit = require('../libs/promiseit'),
+    mongoConnect = promiseit.mongoConnect,
+    collectionAggregate = promiseit.collectionAggregate;
 
 router.use(cors);
 
@@ -13,15 +16,10 @@ router.get('/:job_title', function(req, res, next) {
 
     console.log(job_title);
 
-    MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
-        if (err) {
-            next(new HttpError("Internal Server Error", 500));
-            return;
-        }
-
+    mongoConnect().then(function(db) {
         var collection = db.collection('workings');
 
-        collection.aggregate([
+        return collectionAggregate(collection, [
             {
                 $match: {
                     job_title: job_title,
@@ -35,15 +33,15 @@ router.get('/:job_title', function(req, res, next) {
                     count: {$sum: 1},
                 }
             },
-        ], function(err, result) {
-            if (err) {
-                next(new HttpError("Internal Server Error", 500));
-                return;
-            }
+        ]).then(function(result) {
             db.close();
-
             res.send(result);
+        }).catch(function(err) {
+            db.close();
+            next(new HttpError("Internal Server Error", 500));
         });
+    }).catch(function(err) {
+        next(new HttpError("Internal Server Error", 500));
     });
 });
 
