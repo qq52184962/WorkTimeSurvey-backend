@@ -12,8 +12,7 @@ router.get('/', function(req, res, next) {
     var collection = db.get().collection('workings');
     var q = {};
     var opt = {
-            company_id: 1,
-            company_name: 1,
+            company: 1,
             week_work_time: 1,
             job_title: 1,
             created_at: 1,
