@@ -1,13 +1,8 @@
 var express = require('express');
 var router = express.Router();
 var request = require('request');
-var MongoClient = require('mongodb').MongoClient;
-var ObjectId = require('mongodb').ObjectId;
 var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
-var promiseit = require('../libs/promiseit'),
-    mongoConnect = promiseit.mongoConnect,
-    collectionAggregate = promiseit.collectionAggregate;
 var db = require('../libs/db');
 
 router.use(cors);
@@ -18,7 +13,7 @@ router.get('/:job_title', function(req, res, next) {
 
     var page = req.query.page || 0;
 
-    collectionAggregate(collection, [
+    collection.aggregate([
         {
             $match: {
                 job_title: job_title,
@@ -43,7 +38,7 @@ router.get('/:job_title', function(req, res, next) {
         {
             $skip: page * 10,
         },
-    ]).then(function(results) {
+    ]).toArray().then(function(results) {
         res.send(results);
     }).catch(function(err) {
         next(new HttpError("Internal Server Error", 500));
