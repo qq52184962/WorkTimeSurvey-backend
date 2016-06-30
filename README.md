@@ -1,9 +1,29 @@
-GoodJob
+WorkTimeSurvey Backend
 =====================
 
-[![Build Status](https://travis-ci.com/barry800414/GoodJob.svg?token=yXP8DuL2yB4QFhdc96Yu&branch=feature/master)](https://travis-ci.com/barry800414/GoodJob)
+* Environment: nodejs 6
+* DB: mongo
 
-### Basic Commands
-  * install all packages: <code>npm install</code>
-  * launch server: <code>npm start</code>
-  * test server: <code>npm test</code>
+## Install and Run
+
+### Use docker-compose
+
+```
+npm install
+```
+
+```
+docker-compose up
+```
+
+### Manual
+
+```
+npm install
+```
+
+```
+MONGODB_URI=xxx npm start
+```
+where xxx is your mongodb url
+
