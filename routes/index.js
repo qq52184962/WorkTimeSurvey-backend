@@ -85,6 +85,7 @@ router.post('/', function(req, res, next) {
 
     var data = {
         author: author,
+        company: {},
         created_at: new Date(),
     };
 
@@ -92,7 +93,6 @@ router.post('/', function(req, res, next) {
     // make sure the field is string
     [
         "job_title", "week_work_time",
-        "company_id", "company_name",
         "salary_min", "salary_max", "salary_type",
         "work_year", "review",
     ].forEach(function(field, i) {
@@ -100,6 +100,12 @@ router.post('/', function(req, res, next) {
             data[field] = req.body[field];
         }
     });
+    if (req.body.company_id && (typeof req.body.company_id === "string") && req.body.company_id !== "") {
+        data.company.id = req.body.company_id;
+    }
+    if (req.body.company_name && (typeof req.body.company_name === "string") && req.body.company_name !== "") {
+        data.company.name = req.body.company_name;
+    }
 
     try {
         if (! data.job_title) {
@@ -113,7 +119,7 @@ router.post('/', function(req, res, next) {
             throw new HttpError("week_work_time need to be a number", 422);
         }
 
-        if (! (data.company_id || data.company_name)) {
+        if (! (data.company.id || data.company.name)) {
             throw new HttpError("company_id or company_name is required", 422);
         }
     } catch (err) {
