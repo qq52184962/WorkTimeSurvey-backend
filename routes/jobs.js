@@ -28,11 +28,20 @@ router.get('/:job_title', function(req, res, next) {
             {
                 $group: {
                     _id: "$company_id",
-                    workings: {$push: {week_work_time: "$week_work_time", company_name: "$company_name"}},
+                    company_name: {$first: "$company_name"},
+                    week_work_times: {$push: "$week_work_time"},
                     average_week_work_time: {$avg: "$week_work_time"},
                     count: {$sum: 1},
                 }
             },
+            {
+                $sort: {
+                    average_week_work_time: -1,
+                }
+            },
+            {
+                $limit: 10,
+            }
         ]).then(function(result) {
             db.close();
             res.send(result);
