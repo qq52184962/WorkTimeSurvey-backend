@@ -1,33 +1,23 @@
 var MongoClient = require('mongodb').MongoClient;
 
-var state = {
-    db: null,
-};
+var _db = null;
 
-MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
-    console.log("connect");
+module.exports.connect = function(url, callback) {
+    MongoClient.connect(url, function(err, db) {
+        if (! err) {
+            _db = db;
+        }
+        callback();
+    });
 
-    if (! err) {
-        state.db = db;
-    }
-});
+}
 
 module.exports.close = function() {
-    state.db.close();
+    _db.close();
 
-    state.db = null;
+    _db = null;
 };
 
 module.exports.get = function() {
-    return state.db;
-}
-
-module.exports.pget = function() {
-    return new Promise(function(resolve, reject) {
-        if (state.db) {
-            resolve(state.db);
-        } else {
-            reject(new Error("DB error"));
-        }
-    });
-}
+    return _db;
+};

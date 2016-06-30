@@ -8,6 +8,7 @@ var HttpError = require('./errors').HttpError;
 var promiseit = require('../libs/promiseit'),
     mongoConnect = promiseit.mongoConnect,
     collectionAggregate = promiseit.collectionAggregate;
+var db = require('../libs/db');
 
 router.use(cors);
 
@@ -16,38 +17,32 @@ router.get('/:job_title', function(req, res, next) {
 
     console.log(job_title);
 
-    mongoConnect().then(function(db) {
-        var collection = db.collection('workings');
+    var collection = db.get().collection('workings');
 
-        return collectionAggregate(collection, [
-            {
-                $match: {
-                    job_title: job_title,
-                }
-            },
-            {
-                $group: {
-                    _id: "$company",
-                    week_work_times: {$push: "$week_work_time"},
-                    average_week_work_time: {$avg: "$week_work_time"},
-                    count: {$sum: 1},
-                }
-            },
-            {
-                $sort: {
-                    average_week_work_time: -1,
-                }
-            },
-            {
-                $limit: 10,
+    collectionAggregate(collection, [
+        {
+            $match: {
+                job_title: job_title,
             }
-        ]).then(function(result) {
-            db.close();
-            res.send(result);
-        }).catch(function(err) {
-            db.close();
-            next(new HttpError("Internal Server Error", 500));
-        });
+        },
+        {
+            $group: {
+                _id: "$company",
+                week_work_times: {$push: "$week_work_time"},
+                average_week_work_time: {$avg: "$week_work_time"},
+                count: {$sum: 1},
+            }
+        },
+        {
+            $sort: {
+                average_week_work_time: -1,
+            }
+        },
+        {
+            $limit: 10,
+        }
+    ]).then(function(result) {
+        res.send(result);
     }).catch(function(err) {
         next(new HttpError("Internal Server Error", 500));
     });

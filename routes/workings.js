@@ -3,6 +3,7 @@ var router = express.Router();
 var MongoClient = require('mongodb').MongoClient;
 var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
+var db = require('../libs/db').get();
 
 router.use(cors);
 
