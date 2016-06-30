@@ -6,6 +6,11 @@ var db = require('../libs/db');
 
 router.use(cors);
 
+/*
+ * Show the newest company, week_work_time, job_title
+ * GET /
+ * [page = 0]
+ */
 router.get('/', function(req, res, next) {
     var page = req.query.page || 0;
 

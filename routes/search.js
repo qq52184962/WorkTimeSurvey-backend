@@ -7,6 +7,12 @@ var db = require('../libs/db');
 
 router.use(cors);
 
+/*
+ * GET /
+ * [page = 0]
+ * [key = ""]: on empty, it will search all company
+ * Show 25 results per page
+ */
 router.get('/', function(req, res, next) {
     var search = req.query.key || "";
     var page = req.query.page || 0;

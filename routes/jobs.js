@@ -7,6 +7,11 @@ var db = require('../libs/db');
 
 router.use(cors);
 
+/*
+ * GET /:job_title
+ * [page = 0]
+ * Show 10 results per page
+ */
 router.get('/:job_title', function(req, res, next) {
     var job_title = req.params.job_title;
     var collection = db.get().collection('workings');
