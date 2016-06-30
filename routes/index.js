@@ -3,11 +3,10 @@ var router = express.Router();
 var request = require('request');
 var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectId;
+var cors = require('./cors');
+var HttpError = require('./errors').HttpError;
 
-router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    next();
-});
+router.use(cors);
 
 function createError(message, status) {
     var err = new Error(message);
@@ -102,18 +101,18 @@ router.post('/', function(req, res, next) {
 
     try {
         if (! data.job_title) {
-            throw createError("job_title is required", 422);
+            throw new HttpError("job_title is required", 422);
         }
         if (! data.week_work_time) {
-            throw createError("week_work_time is required", 422);
+            throw new HttpError("week_work_time is required", 422);
         }
         data.week_work_time = parseInt(data.week_work_time);
         if (isNaN(data.week_work_time)) {
-            throw createError("week_work_time need to be a number", 422);
+            throw new HttpError("week_work_time need to be a number", 422);
         }
 
         if (! (data.company_id || data.company_name)) {
-            throw createError("company_id or company_name is required", 422);
+            throw new HttpError("company_id or company_name is required", 422);
         }
     } catch (err) {
         next(err);
@@ -124,8 +123,7 @@ router.post('/', function(req, res, next) {
     MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
         if (err) {
             console.log("Connect to DB fail");
-            next(createError("Internal Server Error", 500));
-
+            next(new HttpError("Internal Server Error", 500));
             return;
         }
 
@@ -134,13 +132,11 @@ router.post('/', function(req, res, next) {
         collection.insert(data, function(err, result) {
             if (err) {
                 console.log("DB insert fail");
-                next(createError("Internal Server Error", 500));
-
+                next(new HttpError("Internal Server Error", 500));
                 return;
             }
             db.close();
 
-            res.header("Access-Control-Allow-Origin", "*");
             res.send(data);
         });
     });

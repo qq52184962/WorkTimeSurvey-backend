@@ -1,8 +1,11 @@
 var express = require('express');
 var router = express.Router();
 var MongoClient = require('mongodb').MongoClient;
+var cors = require('./cors');
+var HttpError = require('./errors').HttpError;
 
-/* GET home page. */
+router.use(cors);
+
 router.get('/', function(req, res, next) {
     var search = req.query.key || "";
     var page = req.query.page || 0;
@@ -16,16 +19,18 @@ router.get('/', function(req, res, next) {
 
     MongoClient.connect(process.env.MONGODB_URI, function(err, db) {
         if (err) {
-            res.send({
-                status: "error"
-            });
+            next(new HttpError("Internal Server Error", 500));
+            return;
         }
         var collection = db.collection('companies');
 
         collection.find(q).skip(25 * page).limit(25).toArray(function(err, docs) {
+            if (err) {
+                next(new HttpError("Internal Server Error", 500));
+                return;
+            }
             db.close();
 
-            res.header("Access-Control-Allow-Origin", "*");
             res.send(docs);
         });
     });
