@@ -4,6 +4,7 @@ var request = require('request');
 var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
 var db = require('../libs/db');
+var facebook = require('../libs/facebook');
 
 router.use(cors);
 
@@ -14,56 +15,22 @@ function createError(message, status) {
     return err;
 }
 
+if (! process.env.SKIP_FACEBOOK_AUTH) {
+
 router.post('/', function(req, res, next) {
-    if (process.env.SKIP_FACEBOOK_AUTH) {
-        console.log("skip facebook auth");
+    var access_token = req.body.access_token;
 
+    console.log("facebook auth with access_token " + access_token);
+
+    facebook.access_token_auth(access_token).then(function(facebook) {
+        req.facebook = facebook;
         next();
-    } else {
-        var access_token = req.body.access_token;
-
-        if (! access_token) {
-            next(createError("access_token is required", 429));
-
-            return;
-        } else if (access_token === "") {
-            next(createError("access_token is required", 429));
-
-            return;
-        }
-
-        console.log("facebook auth with access_token " + access_token);
-
-        request.get({
-            url: "https://graph.facebook.com/v2.6/me",
-            qs: {
-                access_token: access_token,
-                fields: "id,name",
-                format: "json",
-            }
-        }, function(error, response, body) {
-            if (error) {
-                console.log("request error");
-                next(createError("access_token is invalid", 401));
-
-                return;
-            }
-
-            var content = JSON.parse(body);
-
-            if (content.error) {
-                console.log("request response with error field");
-                next(createError("access_token is invalid", 401));
-
-                return;
-            }
-
-            req.facebook = {id: content.id, name: content.name};
-
-            next();
-        });
-    }
+    }).catch(function(err) {
+        next(new HttpError("Unauthorized", 401));
+    });
 });
+
+}
 
 router.post('/', function(req, res, next) {
     var author = {};
