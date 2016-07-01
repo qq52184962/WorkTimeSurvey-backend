@@ -15,6 +15,9 @@ function createError(message, status) {
     return err;
 }
 
+/*
+ *  When developing, you can set environment to skip facebook auth
+ */
 if (! process.env.SKIP_FACEBOOK_AUTH) {
 
 router.post('/', function(req, res, next) {
@@ -32,7 +35,21 @@ router.post('/', function(req, res, next) {
 
 }
 
+/*
+ * POST /
+ * company_id | company_name
+ * job_title: string
+ * week_work_time: integer
+ * [salary_min]
+ * [salary_max]
+ * [salary_type]: suggest "hour", "month", "year"
+ * [work_year]
+ * [review]
+ */
 router.post('/', function(req, res, next) {
+    /*
+     * Prepare and collect the data from request
+     */
     var author = {};
 
     if (req.body.email && (typeof req.body.email === "string") && req.body.email !== "") {
@@ -71,6 +88,9 @@ router.post('/', function(req, res, next) {
         data.company.name = req.body.company_name;
     }
 
+    /*
+     * Check all the required fields, or raise an 422 http error
+     */
     try {
         if (! data.job_title) {
             throw new HttpError("job_title is required", 422);
@@ -91,9 +111,14 @@ router.post('/', function(req, res, next) {
         return;
     }
 
+    /*
+     * So, here, the data are well-down
+     */
+
     var collection = db.get().collection("workings");
     var companyCollection = db.get().collection("companies");
 
+    // use company id to search company
     function searchCompanyById(id) {
         return companyCollection.find({
             $or: [
@@ -102,6 +127,8 @@ router.post('/', function(req, res, next) {
             ]
         }).toArray();
     }
+
+    // use company name to search company
     function searchCompanyByName(name) {
         return companyCollection.find({
             name: name,
@@ -110,6 +137,13 @@ router.post('/', function(req, res, next) {
 
     Promise.resolve(data).then(function(data) {
         console.log("autocompletion company");
+        /*
+         * 如果使用者有給定 company id，將 company name 補成查詢到的公司
+         *
+         * 如果使用者是給定 company name，如果只找到一間公司，才補上 id
+         *
+         * 其他情況看 issue #7
+         */
         if (data.company.id) {
             return searchCompanyById(data.company.id).then(function(results) {
                 if (results.length === 0) {
