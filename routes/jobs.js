@@ -38,7 +38,7 @@ router.get('/:job_title', function(req, res, next) {
             }
         },
         {
-            $limit: 10,
+            $limit: page * 10 + 10,
         },
         {
             $skip: page * 10,
