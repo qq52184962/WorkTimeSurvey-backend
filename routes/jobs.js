@@ -8,6 +8,34 @@ var db = require('../libs/db');
 router.use(cors);
 
 /*
+ * GET /
+ * [page = 0]
+ * [key = ""]: on empty, it will search all company
+ * Show 25 results per page
+ */
+router.get('/search', function(req, res, next) {
+    var search = req.query.key || "";
+    var page = req.query.page || 0;
+    var q;
+
+    if (search == "") {
+        q = {isFinal: true};
+    } else {
+        q = {des: new RegExp(search), isFinal: true};
+    }
+
+    console.log(q);
+
+    var collection = db.get().collection('job_titles');
+
+    collection.find(q, {isFinal: 0}).skip(25 * page).limit(25).toArray().then(function(results) {
+        res.send(results);
+    }).catch(function(err) {
+        next(new HttpError("Internal Server Error", 500));
+    });
+});
+
+/*
  * GET /:job_title
  * [page = 0]
  * Show 10 results per page
