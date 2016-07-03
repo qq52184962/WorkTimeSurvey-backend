@@ -6,6 +6,13 @@ var bodyParser = require('body-parser');
 var routes = require('./routes/index');
 var db = require('./libs/db');
 
+// Logging
+var winston = require('winston');
+require('winston-mongodb').MongoDB;
+winston.add(winston.transports.MongoDB, {
+    db: process.env.MONGODB_URI,
+});
+
 var app = express();
 
 app.use(logger('dev'));

@@ -20,7 +20,9 @@
     "express": "^4.13.4",
     "mongodb": "^2.1.18",
     "morgan": "^1.7.0",
-    "request": "^2.72.0"
+    "request": "^2.72.0",
+    "winston": "^2.2.0",
+    "winston-mongodb": "^1.6.0"
   },
   "devDependencies": {}
 }
