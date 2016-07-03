@@ -5,6 +5,7 @@ var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
 var db = require('../libs/db');
 var facebook = require('../libs/facebook');
+var winston = require('winston');
 
 router.use(cors);
 
@@ -23,12 +24,14 @@ if (! process.env.SKIP_FACEBOOK_AUTH) {
 router.post('/', function(req, res, next) {
     var access_token = req.body.access_token;
 
-    console.log("facebook auth with access_token " + access_token);
-
     facebook.access_token_auth(access_token).then(function(facebook) {
+        winston.info("facebook auth success", {access_token: access_token});
+
         req.facebook = facebook;
         next();
     }).catch(function(err) {
+        winston.info("facebook auth fail", {access_token: access_token});
+
         next(new HttpError("Unauthorized", 401));
     });
 });
@@ -107,6 +110,8 @@ router.post('/', function(req, res, next) {
             throw new HttpError("company_id or company_name is required", 422);
         }
     } catch (err) {
+        winston.info("workings insert data fail", data);
+
         next(err);
         return;
     }
@@ -163,8 +168,14 @@ router.post('/', function(req, res, next) {
     }).then(function(data) {
         return collection.insert(data);
     }).then(function(result) {
+        winston.info("workings insert data success", data);
+
         res.send(data);
-    }).catch(next);
+    }).catch(function(err) {
+        winston.info("workings insert data fail", data);
+
+        next(err);
+    });
 });
 
 module.exports = router;
