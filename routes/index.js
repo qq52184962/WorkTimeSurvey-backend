@@ -121,10 +121,7 @@ router.post('/', function(req, res, next) {
     // use company id to search company
     function searchCompanyById(id) {
         return companyCollection.find({
-            $or: [
-                {company_id: id},
-                {business_id: id},
-            ]
+            id: id,
         }).toArray();
     }
 
@@ -156,7 +153,7 @@ router.post('/', function(req, res, next) {
         } else {
             return searchCompanyByName(data.company.name).then(function(results) {
                 if (results.length === 1) {
-                    data.company.id = results[0].company_id || result[0].business_id;
+                    data.company.id = results[0].id;
                     return data;
                 } else {
                     return data;
