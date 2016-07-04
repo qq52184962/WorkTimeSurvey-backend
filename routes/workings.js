@@ -11,7 +11,7 @@ router.use(cors);
  * GET /
  * [page = 0]
  */
-router.get('/', function(req, res, next) {
+router.get('/latest', function(req, res, next) {
     var page = req.query.page || 0;
 
     var collection = db.get().collection('workings');
