@@ -94,6 +94,7 @@ router.post('/', function(req, res, next) {
         "job_title", "week_work_time",
         "salary_min", "salary_max", "salary_type",
         "work_year", "review",
+        "overtime_frequency",
     ].forEach(function(field, i) {
         if (req.body[field] && (typeof req.body[field] === "string") && req.body[field] !== "") {
             data[field] = req.body[field];
@@ -119,6 +120,12 @@ router.post('/', function(req, res, next) {
         data.week_work_time = parseInt(data.week_work_time);
         if (isNaN(data.week_work_time)) {
             throw new HttpError("week_work_time need to be a number", 422);
+        }
+        if (data.overtime_frequency) {
+            if (["0", "1", "2", "3"].indexOf(data.overtime_frequency) === -1) {
+                throw new HttpError("overtime_frequency must be 0, 1, 2, 3", 422);
+            }
+            data.overtime_frequency = parseInt(data.overtime_frequency);
         }
 
         if (! (data.company.id || data.company.name)) {
