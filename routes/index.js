@@ -3,7 +3,6 @@ var router = express.Router();
 var request = require('request');
 var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
-var db = require('../libs/db');
 var facebook = require('../libs/facebook');
 var winston = require('winston');
 
