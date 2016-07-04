@@ -40,7 +40,7 @@ router.get('/search', function(req, res, next) {
  * [page = 0]
  * Show 10 results per page
  */
-router.get('/:job_title', function(req, res, next) {
+router.get('/:job_title/statistics', function(req, res, next) {
     var job_title = req.params.job_title;
     var collection = db.get().collection('workings');
 

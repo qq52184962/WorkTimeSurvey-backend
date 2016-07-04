@@ -21,7 +21,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
-app.use('/search', require('./routes/search'));
+app.use('/companies', require('./routes/companies'));
 app.use('/workings', require('./routes/workings'));
 app.use('/jobs', require('./routes/jobs'));
 

@@ -13,7 +13,7 @@ router.use(cors);
  * [key = ""]: on empty, it will search all company
  * Show 25 results per page
  */
-router.get('/', function(req, res, next) {
+router.get('/search', function(req, res, next) {
     var search = req.query.key || "";
     var page = req.query.page || 0;
     var q;
