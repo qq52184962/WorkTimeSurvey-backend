@@ -15,6 +15,12 @@ router.use(cors);
  */
 router.get('/latest', function(req, res, next) {
     var page = req.query.page || 0;
+    var limit = req.query.page || 25;
+
+    limit = parseInt(limit);
+    if (isNaN(limit) || limit > 50) {
+        throw new HttpError("limit is not allow");
+    }
 
     var collection = db.get().collection('workings');
     var q = {};
@@ -24,7 +30,7 @@ router.get('/latest', function(req, res, next) {
             job_title: 1,
             created_at: 1,
         };
-    collection.find(q, opt).sort({created_at: -1}).skip(25 * page).limit(25).toArray().then(function(results) {
+    collection.find(q, opt).sort({created_at: -1}).skip(limit * page).limit(limit).toArray().then(function(results) {
         res.send(results);
     }).catch(function(err) {
         next(new HttpError("Internal Server Error", 500));
