@@ -100,6 +100,7 @@ router.post('/', function(req, res, next) {
         "salary_min", "salary_max", "salary_type",
         "work_year", "review",
         "overtime_frequency",
+        "day_promised_work_time", "day_real_work_time",
     ].forEach(function(field, i) {
         if (req.body[field] && (typeof req.body[field] === "string") && req.body[field] !== "") {
             data[field] = req.body[field];
@@ -131,6 +132,20 @@ router.post('/', function(req, res, next) {
                 throw new HttpError("overtime_frequency must be 0, 1, 2, 3", 422);
             }
             data.overtime_frequency = parseInt(data.overtime_frequency);
+        }
+        if (! data.day_promised_work_time) {
+            throw new HttpError("day_promised_work_time is required", 422);
+        }
+        data.day_promised_work_time = parseInt(data.day_promised_work_time);
+        if (isNaN(data.day_promised_work_time)) {
+            throw new HttpError("day_promised_work_time need to be a number", 422);
+        }
+        if (! data.day_real_work_time) {
+            throw new HttpError("day_real_work_time is required", 422);
+        }
+        data.day_real_work_time = parseInt(data.day_real_work_time);
+        if (isNaN(data.day_real_work_time)) {
+            throw new HttpError("day_real_work_time need to be a number", 422);
         }
 
         if (! (data.company.id || data.company.name)) {
