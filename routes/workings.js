@@ -197,13 +197,17 @@ function validateWorking(data) {
     if (isNaN(data.week_work_time)) {
         throw new HttpError("week_work_time need to be a number", 422);
     }
-
-    if (data.overtime_frequency) {
-        if (["0", "1", "2", "3"].indexOf(data.overtime_frequency) === -1) {
-            throw new HttpError("overtime_frequency must be 0, 1, 2, 3", 422);
-        }
-        data.overtime_frequency = parseInt(data.overtime_frequency);
+    if (data.week_work_time < 0 || data.week_work_time > 168) {
+        throw new HttpError("week_work_time must be 0~168", 422);
     }
+
+    if (! data.overtime_frequency) {
+        throw new HttpError("overtime_frequency is required", 422);
+    }
+    if (["0", "1", "2", "3"].indexOf(data.overtime_frequency) === -1) {
+        throw new HttpError("overtime_frequency must be 0, 1, 2, 3", 422);
+    }
+    data.overtime_frequency = parseInt(data.overtime_frequency);
 
     if (! data.day_promised_work_time) {
         throw new HttpError("day_promised_work_time is required", 422);
@@ -212,6 +216,9 @@ function validateWorking(data) {
     if (isNaN(data.day_promised_work_time)) {
         throw new HttpError("day_promised_work_time need to be a number", 422);
     }
+    if (data.day_promised_work_time < 0 || data.day_promised_work_time > 24) {
+        throw new HttpError("day_promised_work_time must be 0~24", 422);
+    }
 
     if (! data.day_real_work_time) {
         throw new HttpError("day_real_work_time is required", 422);
@@ -219,6 +226,9 @@ function validateWorking(data) {
     data.day_real_work_time = parseInt(data.day_real_work_time);
     if (isNaN(data.day_real_work_time)) {
         throw new HttpError("day_real_work_time need to be a number", 422);
+    }
+    if (data.day_real_work_time < 0 || data.day_real_work_time > 24) {
+        throw new HttpError("day_real_work_time must be 0~24", 422);
     }
 
     if (! (data.company.id || data.company.name)) {
