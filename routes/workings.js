@@ -97,8 +97,6 @@ router.post('/', function(req, res, next) {
     // make sure the field is string
     [
         "job_title", "week_work_time",
-        "salary_min", "salary_max", "salary_type",
-        "work_year", "review",
         "overtime_frequency",
         "day_promised_work_time", "day_real_work_time",
     ].forEach(function(field, i) {
