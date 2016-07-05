@@ -14,7 +14,7 @@ router.use(cors);
  */
 router.get('/latest', function(req, res, next) {
     var page = req.query.page || 0;
-    var limit = req.query.page || 25;
+    var limit = req.query.limit || 25;
 
     limit = parseInt(limit);
     if (isNaN(limit) || limit > 50) {
