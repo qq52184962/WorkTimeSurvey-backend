@@ -2,7 +2,6 @@ var express = require('express');
 var router = express.Router();
 var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
-var db = require('../libs/db');
 var facebook = require('../libs/facebook');
 var winston = require('winston');
 
@@ -22,7 +21,7 @@ router.get('/latest', function(req, res, next) {
         throw new HttpError("limit is not allow");
     }
 
-    var collection = db.get().collection('workings');
+    var collection = req.db.collection('workings');
     var q = {};
     var opt = {
             company: 1,
@@ -148,8 +147,8 @@ router.post('/', function(req, res, next) {
      * So, here, the data are well-down
      */
 
-    var collection = db.get().collection("workings");
-    var companyCollection = db.get().collection("companies");
+    var collection = req.db.collection("workings");
+    var companyCollection = req.db.collection("companies");
 
     // use company id to search company
     function searchCompanyById(id) {

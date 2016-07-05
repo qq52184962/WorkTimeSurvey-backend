@@ -1,9 +1,7 @@
 var express = require('express');
 var router = express.Router();
-var MongoClient = require('mongodb').MongoClient;
 var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
-var db = require('../libs/db');
 
 router.use(cors);
 
@@ -24,7 +22,7 @@ router.get('/search', function(req, res, next) {
         q = {name: new RegExp("^" + search)};
     }
 
-    var collection = db.get().collection('companies');
+    var collection = req.db.collection('companies');
 
     collection.find(q).skip(25 * page).limit(25).toArray().then(function(results) {
         res.send(results);

@@ -3,7 +3,6 @@ var router = express.Router();
 var request = require('request');
 var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
-var db = require('../libs/db');
 
 router.use(cors);
 
@@ -26,7 +25,7 @@ router.get('/search', function(req, res, next) {
 
     console.log(q);
 
-    var collection = db.get().collection('job_titles');
+    var collection = req.db.collection('job_titles');
 
     collection.find(q, {isFinal: 0}).skip(25 * page).limit(25).toArray().then(function(results) {
         res.send(results);
@@ -42,7 +41,7 @@ router.get('/search', function(req, res, next) {
  */
 router.get('/:job_title/statistics', function(req, res, next) {
     var job_title = req.params.job_title;
-    var collection = db.get().collection('workings');
+    var collection = req.db.collection('workings');
 
     var page = req.query.page || 0;
 

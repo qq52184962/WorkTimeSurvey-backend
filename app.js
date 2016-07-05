@@ -4,7 +4,7 @@ var logger = require('morgan');
 var bodyParser = require('body-parser');
 
 var routes = require('./routes/index');
-var db = require('./libs/db');
+var expressMongoDb = require('express-mongo-db');
 
 // Logging
 var winston = require('winston');
@@ -19,6 +19,8 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(expressMongoDb(process.env.MONGODB_URI));
 
 app.use('/', routes);
 app.use('/companies', require('./routes/companies'));
