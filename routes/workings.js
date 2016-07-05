@@ -97,9 +97,8 @@ router.post('/', function(req, res, next) {
     // make sure the field is string
     [
         "job_title", "week_work_time",
-        "salary_min", "salary_max", "salary_type",
-        "work_year", "review",
         "overtime_frequency",
+        "day_promised_work_time", "day_real_work_time",
     ].forEach(function(field, i) {
         if (req.body[field] && (typeof req.body[field] === "string") && req.body[field] !== "") {
             data[field] = req.body[field];
@@ -116,26 +115,7 @@ router.post('/', function(req, res, next) {
      * Check all the required fields, or raise an 422 http error
      */
     try {
-        if (! data.job_title) {
-            throw new HttpError("job_title is required", 422);
-        }
-        if (! data.week_work_time) {
-            throw new HttpError("week_work_time is required", 422);
-        }
-        data.week_work_time = parseInt(data.week_work_time);
-        if (isNaN(data.week_work_time)) {
-            throw new HttpError("week_work_time need to be a number", 422);
-        }
-        if (data.overtime_frequency) {
-            if (["0", "1", "2", "3"].indexOf(data.overtime_frequency) === -1) {
-                throw new HttpError("overtime_frequency must be 0, 1, 2, 3", 422);
-            }
-            data.overtime_frequency = parseInt(data.overtime_frequency);
-        }
-
-        if (! (data.company.id || data.company.name)) {
-            throw new HttpError("company_id or company_name is required", 422);
-        }
+        validateWorking(data);
     } catch (err) {
         winston.info("workings insert data fail", data);
 
@@ -204,5 +184,56 @@ router.post('/', function(req, res, next) {
         next(err);
     });
 });
+
+function validateWorking(data) {
+    if (! data.job_title) {
+        throw new HttpError("job_title is required", 422);
+    }
+
+    if (! data.week_work_time) {
+        throw new HttpError("week_work_time is required", 422);
+    }
+    data.week_work_time = parseInt(data.week_work_time);
+    if (isNaN(data.week_work_time)) {
+        throw new HttpError("week_work_time need to be a number", 422);
+    }
+    if (data.week_work_time < 0 || data.week_work_time > 168) {
+        throw new HttpError("week_work_time must be 0~168", 422);
+    }
+
+    if (! data.overtime_frequency) {
+        throw new HttpError("overtime_frequency is required", 422);
+    }
+    if (["0", "1", "2", "3"].indexOf(data.overtime_frequency) === -1) {
+        throw new HttpError("overtime_frequency must be 0, 1, 2, 3", 422);
+    }
+    data.overtime_frequency = parseInt(data.overtime_frequency);
+
+    if (! data.day_promised_work_time) {
+        throw new HttpError("day_promised_work_time is required", 422);
+    }
+    data.day_promised_work_time = parseInt(data.day_promised_work_time);
+    if (isNaN(data.day_promised_work_time)) {
+        throw new HttpError("day_promised_work_time need to be a number", 422);
+    }
+    if (data.day_promised_work_time < 0 || data.day_promised_work_time > 24) {
+        throw new HttpError("day_promised_work_time must be 0~24", 422);
+    }
+
+    if (! data.day_real_work_time) {
+        throw new HttpError("day_real_work_time is required", 422);
+    }
+    data.day_real_work_time = parseInt(data.day_real_work_time);
+    if (isNaN(data.day_real_work_time)) {
+        throw new HttpError("day_real_work_time need to be a number", 422);
+    }
+    if (data.day_real_work_time < 0 || data.day_real_work_time > 24) {
+        throw new HttpError("day_real_work_time must be 0~24", 422);
+    }
+
+    if (! (data.company.id || data.company.name)) {
+        throw new HttpError("company_id or company_name is required", 422);
+    }
+}
 
 module.exports = router;
