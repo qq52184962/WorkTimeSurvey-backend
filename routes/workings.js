@@ -241,12 +241,22 @@ function validateWorking(data) {
     }
 }
 
+/*
+ * Check the quota, limit queries <= 10
+ *
+ * The quota checker use author as _id
+ *
+ * @return  Promise
+ *
+ * Fullfilled with newest queries_count
+ * Rejected with HttpError
+ */
 function checkQuota(db, author) {
     var collection = db.collection('authors');
 
     return collection.findAndModify(
         {
-            _id: {id: author.id, type: author.type},
+            _id: author,
             queries_count: {$lt: 10},
         },
         [
