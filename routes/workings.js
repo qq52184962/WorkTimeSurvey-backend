@@ -180,11 +180,11 @@ router.post('/', function(req, res, next) {
     }).then(function(data) {
         return collection.insert(data);
     }).then(function(result) {
-        winston.info("成功上傳資料", data);
+        winston.info("workings insert data success", data);
 
         res.send(data);
     }).catch(function(err) {
-        winston.info("上傳資料失敗", data);
+        winston.info("workings insert data fail", data);
 
         next(err);
     });
