@@ -1,11 +1,8 @@
 var express = require('express');
 var router = express.Router();
-var cors = require('./cors');
 var HttpError = require('./errors').HttpError;
 var facebook = require('../libs/facebook');
 var winston = require('winston');
-
-router.use(cors);
 
 /*
  * Show the newest company, week_work_time, job_title
