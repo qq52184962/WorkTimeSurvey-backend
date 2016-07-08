@@ -16,7 +16,12 @@ router.get('/search', function(req, res, next) {
     if (search == "") {
         q = {};
     } else {
-        q = {name: new RegExp("^" + search)};
+        q = {
+            $or: [
+                {name: new RegExp("^" + search)},
+                {id: search},
+            ]
+        };
     }
 
     var collection = req.db.collection('companies');
