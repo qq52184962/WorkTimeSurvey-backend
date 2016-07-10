@@ -16,15 +16,15 @@ describe('jobs', function() {
         before(function() {
             return db.collection('job_titles').insertMany([
                 {
-                    des: 'googl',
+                    des: 'GOOGL',
                     isFinal: true,
                 },
                 {
-                    des: 'gogor',
+                    des: 'GOGOR',
                     isFinal: false,
                 },
                 {
-                    des: 'yaho',
+                    des: 'YAHO',
                     isFinal: true,
                 }
             ]);
