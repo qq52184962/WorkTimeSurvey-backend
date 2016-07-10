@@ -1,0 +1,18 @@
+language: node_js
+
+node_js:
+    - "6"
+
+services:
+    - mongodb
+
+env:
+    global:
+        - MONGODB_URI=mongodb://localhost/goodjob
+        - NODE_ENV=test
+
+install:
+    - npm install
+
+script:
+    - npm test
