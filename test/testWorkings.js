@@ -139,15 +139,15 @@ describe('POST /workings', function() {
             return db.collection('companies').insertMany([
                 {
                     id: '00000001',
-                    name: 'GoodJob',
+                    name: 'GOODJOB',
                 },
                 {
                     id: '00000002',
-                    name: 'GoodJobGreat',
+                    name: 'GOODJOBGREAT',
                 },
                 {
                     id: '00000003',
-                    name: 'GoodJobGreat',
+                    name: 'GOODJOBGREAT',
                 },
             ]);
         });
@@ -161,7 +161,7 @@ describe('POST /workings', function() {
                 .expect(200)
                 .expect(function(res) {
                     assert.equal(res.body.company.id, '00000001');
-                    assert.equal(res.body.company.name, 'GoodJob');
+                    assert.equal(res.body.company.name, 'GOODJOB');
                 })
                 .end(done);
         });
@@ -180,12 +180,26 @@ describe('POST /workings', function() {
             request(app).post('/workings')
                 .send(generatePayload({
                     company_id: -1,
+                    company: 'GOODJOB',
+                }))
+                .expect(200)
+                .expect(function(res) {
+                    assert.equal(res.body.company.id, '00000001');
+                    assert.equal(res.body.company.name, 'GOODJOB');
+                })
+                .end(done);
+        });
+
+        it('當 company 是小寫時，轉換成大寫', function(done) {
+            request(app).post('/workings')
+                .send(generatePayload({
+                    company_id: -1,
                     company: 'GoodJob',
                 }))
                 .expect(200)
                 .expect(function(res) {
                     assert.equal(res.body.company.id, '00000001');
-                    assert.equal(res.body.company.name, 'GoodJob');
+                    assert.equal(res.body.company.name, 'GOODJOB');
                 })
                 .end(done);
         });
@@ -199,7 +213,7 @@ describe('POST /workings', function() {
                 .expect(200)
                 .expect(function(res) {
                     assert.isUndefined(res.body.company.id);
-                    assert.equal(res.body.company.name, 'GoodJobGreat');
+                    assert.equal(res.body.company.name, 'GOODJOBGREAT');
                 })
                 .end(done);
         });
