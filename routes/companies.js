@@ -14,7 +14,7 @@ router.get('/search', function(req, res, next) {
     var q;
 
     if (search == "") {
-        q = {};
+        throw new HttpError("key is required", 429);
     } else {
         q = {
             $or: [
