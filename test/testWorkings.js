@@ -126,14 +126,6 @@ describe('POST /workings', function() {
         });
     });
 
-    /*it('should successfully insert', function(done) {
-        request(app).post('/workings')
-            .send(generatePayload({
-            }))
-            .expect(200)
-            .end(done);
-    });*/
-
     describe('company', function() {
         before(function() {
             return db.collection('companies').insertMany([
@@ -223,11 +215,12 @@ describe('POST /workings', function() {
         });
     });
 
+    afterEach(function() {
+        return db.collection('authors').remove({});
+    });
+
     after(function() {
-        return Promise.all([
-            db.collection('workings').remove({}),
-            db.collection('authors').remove({})
-        ]);
+        return db.collection('workings').remove({});
     });
 });
 
