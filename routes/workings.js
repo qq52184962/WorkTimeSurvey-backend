@@ -154,7 +154,7 @@ router.post('/', function(req, res, next) {
         if (data.company.id) {
             return searchCompanyById(data.company.id).then(function(results) {
                 if (results.length === 0) {
-                    throw new HttpError("公司統編不正確", 429);
+                    throw new HttpError("公司統編不正確", 422);
                 }
 
                 data.company.name = results[0].name;
