@@ -172,7 +172,7 @@ describe('POST /workings', function() {
                     company_id: '00000000',
                     company: -1,
                 }))
-                .expect(429)
+                .expect(422)
                 .end(done);
         });
 
