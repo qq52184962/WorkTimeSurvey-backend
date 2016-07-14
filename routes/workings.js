@@ -94,10 +94,14 @@ router.post('/', function(req, res, next) {
         author.type = "test";
     }
 
-    var data = {
+    const working = {
         author: author,
         company: {},
         created_at: new Date(),
+    };
+
+    const data = {
+        working: working,
     };
 
     // pick these fields only
@@ -108,21 +112,21 @@ router.post('/', function(req, res, next) {
         "day_promised_work_time", "day_real_work_time",
     ].forEach(function(field, i) {
         if (req.body[field] && (typeof req.body[field] === "string") && req.body[field] !== "") {
-            data[field] = req.body[field];
+            working[field] = req.body[field];
         }
     });
     if (req.body.company_id && (typeof req.body.company_id === "string") && req.body.company_id !== "") {
-        data.company.id = req.body.company_id;
+        working.company.id = req.body.company_id;
     }
     if (req.body.company && (typeof req.body.company === "string") && req.body.company !== "") {
-        data.query = req.body.company;
+        working.query = req.body.company;
     }
 
     /*
      * Check all the required fields, or raise an 422 http error
      */
     try {
-        validateWorking(data);
+        validateWorking(working);
     } catch (err) {
         winston.info("workings insert data fail", data);
 
@@ -159,41 +163,47 @@ router.post('/', function(req, res, next) {
          *
          * 其他情況看 issue #7
          */
-        if (data.company.id) {
-            return searchCompanyById(data.company.id).then(function(results) {
+        const working = data.working;
+
+        if (working.company.id) {
+            return searchCompanyById(working.company.id).then(function(results) {
                 if (results.length === 0) {
                     throw new HttpError("公司統編不正確", 422);
                 }
 
-                data.company.name = results[0].name;
+                working.company.name = results[0].name;
                 return data;
             });
         } else {
-            return searchCompanyById(data.query).then(function(results) {
+            return searchCompanyById(working.query).then(function(results) {
                 if (results.length === 0) {
-                    return searchCompanyByName(data.query.toUpperCase()).then(function(results) {
+                    return searchCompanyByName(working.query.toUpperCase()).then(function(results) {
                         if (results.length === 1) {
-                            data.company.id = results[0].id;
-                            data.company.name = results[0].name;
+                            working.company.id = results[0].id;
+                            working.company.name = results[0].name;
                             return data;
                         } else {
-                            data.company.name = data.query.toUpperCase();
+                            working.company.name = working.query.toUpperCase();
                             return data;
                         }
                     });
                 } else {
-                    data.company.id = results[0].id;
-                    data.company.name = results[0].name;
+                    working.company.id = results[0].id;
+                    working.company.name = results[0].name;
                     return data;
                 }
             });
         }
     }).then(function(data) {
-        return checkQuota(req.db, {id: data.author.id, type: data.author.type}).then(function() {
+        const author = data.working.author;
+
+        return checkQuota(req.db, {id: author.id, type: author.type}).then(function(queries_count) {
+            data.queries_count = queries_count;
+
             return data;
         });
     }).then(function(data) {
-        return collection.insert(data);
+        return collection.insert(data.working);
     }).then(function(result) {
         winston.info("workings insert data success", data);
 
