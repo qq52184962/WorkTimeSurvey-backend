@@ -159,8 +159,9 @@ describe('POST /workings', function() {
                 }))
                 .expect(200)
                 .expect(function(res) {
-                    assert.equal(res.body.company.id, '00000001');
-                    assert.equal(res.body.company.name, 'GOODJOB');
+                    assert.equal(res.body.queries_count, 1);
+                    assert.equal(res.body.working.company.id, '00000001');
+                    assert.equal(res.body.working.company.name, 'GOODJOB');
                 })
                 .end(done);
         });
@@ -183,8 +184,9 @@ describe('POST /workings', function() {
                 }))
                 .expect(200)
                 .expect(function(res) {
-                    assert.equal(res.body.company.id, '00000001');
-                    assert.equal(res.body.company.name, 'GOODJOB');
+                    assert.equal(res.body.queries_count, 1);
+                    assert.equal(res.body.working.company.id, '00000001');
+                    assert.equal(res.body.working.company.name, 'GOODJOB');
                 })
                 .end(done);
         });
@@ -197,8 +199,9 @@ describe('POST /workings', function() {
                 }))
                 .expect(200)
                 .expect(function(res) {
-                    assert.equal(res.body.company.id, '00000001');
-                    assert.equal(res.body.company.name, 'GOODJOB');
+                    assert.equal(res.body.queries_count, 1);
+                    assert.equal(res.body.working.company.id, '00000001');
+                    assert.equal(res.body.working.company.name, 'GOODJOB');
                 })
                 .end(done);
         });
@@ -211,8 +214,9 @@ describe('POST /workings', function() {
                 }))
                 .expect(200)
                 .expect(function(res) {
-                    assert.isUndefined(res.body.company.id);
-                    assert.equal(res.body.company.name, 'GOODJOBGREAT');
+                    assert.equal(res.body.queries_count, 1);
+                    assert.isUndefined(res.body.working.company.id);
+                    assert.equal(res.body.working.company.name, 'GOODJOBGREAT');
                 })
                 .end(done);
         });
@@ -230,8 +234,8 @@ describe('POST /workings', function() {
                         }))
                         .expect(200)
                         .expect(function(res) {
-                            assert.equal(res.body.company.id, '00000001');
-                            assert.equal(res.body.company.name, 'GOODJOB');
+                            assert.equal(res.body.working.company.id, '00000001');
+                            assert.equal(res.body.working.company.name, 'GOODJOB');
                         })
                         .end(function(err) {
                             if (err) {
@@ -250,6 +254,44 @@ describe('POST /workings', function() {
                         company: -1,
                     }))
                     .expect(429)
+                    .end(done);
+            }).catch(function(err) {
+                done(err);
+            });
+        });
+
+        it('新增 2 筆資料，quries_count 會顯示 2', function(done) {
+            (new Promise(function(resolve, reject) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        company_id: '00000001',
+                        company: -1,
+                    }))
+                    .expect(200)
+                    .expect(function(res) {
+                        assert.equal(res.body.queries_count, 1);
+                        assert.equal(res.body.working.company.id, '00000001');
+                        assert.equal(res.body.working.company.name, 'GOODJOB');
+                    })
+                    .end(function(err) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve();
+                        }
+                    });
+            })).then(function() {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        company_id: '00000001',
+                        company: -1,
+                    }))
+                    .expect(200)
+                    .expect(function(res) {
+                        assert.equal(res.body.queries_count, 2);
+                        assert.equal(res.body.working.company.id, '00000001');
+                        assert.equal(res.body.working.company.name, 'GOODJOB');
+                    })
                     .end(done);
             }).catch(function(err) {
                 done(err);
