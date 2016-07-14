@@ -1,8 +1,8 @@
-var express = require('express');
-var router = express.Router();
-var HttpError = require('./errors').HttpError;
-var facebook = require('../libs/facebook');
-var winston = require('winston');
+const express = require('express');
+const router = express.Router();
+const HttpError = require('./errors').HttpError;
+const facebook = require('../libs/facebook');
+const winston = require('winston');
 
 /*
  * Show the newest company, week_work_time, job_title
