@@ -26,8 +26,17 @@ router.get('/latest', function(req, res, next) {
             job_title: 1,
             created_at: 1,
         };
-    collection.find(q, opt).sort({created_at: -1}).skip(limit * page).limit(limit).toArray().then(function(results) {
-        res.send(results);
+
+    const data = {};
+
+    collection.find().count().then(function(count) {
+        data.total = count;
+
+        return collection.find(q, opt).sort({created_at: -1}).skip(limit * page).limit(limit).toArray();
+    }).then(function(results) {
+        data.workings = results;
+
+        res.send(data);
     }).catch(function(err) {
         next(new HttpError("Internal Server Error", 500));
     });
