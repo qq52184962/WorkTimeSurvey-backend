@@ -227,7 +227,6 @@ describe('POST /workings', function() {
                             assert.equal(res.body.company.name, 'GOODJOB');
                         })
                         .end(function(err) {
-                            console.log("!");
                             if (err) {
                                 reject(err);
                             } else {
