@@ -2,6 +2,7 @@ const assert = require('chai').assert;
 const request = require('supertest');
 const app = require('../app');
 const MongoClient = require('mongodb').MongoClient;
+const nock = require('nock');
 
 describe('Workings 工時資訊', function() {
     var db = undefined;
@@ -47,7 +48,7 @@ describe('Workings 工時資訊', function() {
     });
 
 describe('POST /workings', function() {
-    before(function() {
+    before('Seed companies', function() {
         return db.collection('companies').insertMany([
             {
                 id: '00000001',
@@ -64,7 +65,44 @@ describe('POST /workings', function() {
         ]);
     });
 
-    it('需要回傳 401 如果不能 FB 登入');
+    beforeEach('Mock the request to FB', function() {
+        nock('https://graph.facebook.com:443')
+            .get('/v2.6/me')
+            .query(true)
+            .reply(200, {id: '-1', name: 'test'});
+    });
+
+    describe('access_token', function () {
+        it('需要回傳 401 如果沒有 access_token', function(done) {
+            request(app).post('/workings')
+                .expect(401)
+                .end(done);
+        });
+
+        it('需要回傳 401 如果 access_token 為空', function(done) {
+            request(app).post('/workings')
+                .send({
+                    access_token: "",
+                })
+                .expect(401)
+                .end(done);
+        });
+
+        it('需要回傳 401 如果不能 FB 登入', function(done) {
+            nock.cleanAll();
+            nock('https://graph.facebook.com:443')
+                .get('/v2.6/me')
+                .query(true)
+                .reply(200, {error: 'error'});
+
+            request(app).post('/workings')
+                .send({
+                    access_token: 'random',
+                })
+                .expect(401)
+                .end(done);
+        });
+    });
 
     describe('job_title (職稱)', function() {
         it('is required', function(done) {
@@ -222,6 +260,13 @@ describe('POST /workings', function() {
         });
     
         it('只能新增 5 筆資料', function(done) {
+            nock.cleanAll();
+            nock('https://graph.facebook.com:443')
+                .get('/v2.6/me')
+                .times(6)
+                .query(true)
+                .reply(200, {id: '-1', name: 'test'});
+
             const count = 5;
 
             var requestPromiseStack = [];
@@ -261,6 +306,13 @@ describe('POST /workings', function() {
         });
 
         it('新增 2 筆資料，quries_count 會顯示 2', function(done) {
+            nock.cleanAll();
+            nock('https://graph.facebook.com:443')
+                .get('/v2.6/me')
+                .times(2)
+                .query(true)
+                .reply(200, {id: '-1', name: 'test'});
+
             (new Promise(function(resolve, reject) {
                 request(app).post('/workings')
                     .send(generatePayload({
@@ -300,6 +352,10 @@ describe('POST /workings', function() {
     });
 
     afterEach(function() {
+        nock.cleanAll();
+    });
+
+    afterEach(function() {
         return db.collection('authors').remove({});
     });
 
@@ -317,6 +373,7 @@ describe('POST /workings', function() {
 function generatePayload(opt) {
     opt = opt || {};
     const valid = {
+        access_token: 'random',
         job_title: 'test',
         week_work_time: '40',
         overtime_frequency: '3',
