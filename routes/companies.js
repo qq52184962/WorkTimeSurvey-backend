@@ -10,6 +10,8 @@ var lodash = require('lodash');
  * Show 25 results per page
  */
 router.get('/search', function(req, res, next) {
+    winston.info("/workings/search", {query: req.query, ip: req.ip, ips: req.ips});
+
     var search = req.query.key || "";
     var page = req.query.page || 0;
     var q;
