@@ -207,7 +207,7 @@ router.post('/', function(req, res, next) {
     }).then(function(data) {
         return collection.insert(data.working);
     }).then(function(result) {
-        winston.info("workings insert data success", {id: data._id, ip: req.ip, ips: req.ips});
+        winston.info("workings insert data success", {id: data.working._id, ip: req.ip, ips: req.ips});
 
         res.send(data);
     }).catch(function(err) {
