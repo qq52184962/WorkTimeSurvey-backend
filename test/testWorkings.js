@@ -113,6 +113,20 @@ describe('Workings 工時資訊', function() {
                     .expect(422)
                     .end(done);
             });
+
+            it('will be converted to UPPERCASE', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        company_id: '00000001',
+                        job_title: 'GoodJob',
+                    }))
+                    .expect(200)
+                    .expect(function(res) {
+                        console.log(res.body);
+                        assert.propertyVal(res.body.working, 'job_title', 'GOODJOB');
+                    })
+                    .end(done);
+            });
         });
 
         describe('week_work_time (最近一週實際工時)', function() {
