@@ -137,6 +137,11 @@ router.post('/', function(req, res, next) {
     }
 
     /*
+     * Normalize the data
+     */
+    working.job_title = working.job_title.toUpperCase();
+
+    /*
      * So, here, the data are well-down
      */
 
