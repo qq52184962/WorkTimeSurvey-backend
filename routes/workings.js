@@ -3,6 +3,7 @@ const router = express.Router();
 const HttpError = require('./errors').HttpError;
 const facebook = require('../libs/facebook');
 const winston = require('winston');
+const lodash = require('lodash');
 
 /*
  * Show the newest company, week_work_time, job_title
@@ -309,5 +310,48 @@ function checkQuota(db, author) {
     });
 
 }
+
+router.get('/statistics/by-company', function(req, res, next) {
+    winston.info("/statistics/by-company", {company: req.query.company, ip: req.ip, ips: req.ips});
+
+    const company = req.query.company;
+    const collection = req.db.collection('workings');
+
+    collection.aggregate([
+        {
+            $match: {
+                'company.name': new RegExp(lodash.escapeRegExp(company.toUpperCase())),
+            }
+        },
+        {
+            $group: {
+                _id: {company: "$company", job_title: "$job_title"},
+                week_work_times: {$push: "$week_work_time"},
+                average_week_work_time: {$avg: "$week_work_time"},
+                count: {$sum: 1},
+            }
+        },
+        {
+            $sort: {
+                average_week_work_time: -1,
+            }
+        },
+        {
+            $group: {
+                _id: "$_id.company",
+                job_titles: {$push: {
+                    _id: "$_id.job_title",
+                    week_work_times: "$week_work_times",
+                    average_week_work_time: "$average_week_work_time",
+                    count: "$count",
+                }},
+            }
+        },
+    ]).toArray().then(function(results) {
+        res.send(results);
+    }).catch(function(err) {
+        next(new HttpError("Internal Server Error", 500));
+    });
+});
 
 module.exports = router;
