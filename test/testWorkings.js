@@ -373,6 +373,7 @@ describe('Workings 工時資訊', function() {
             return db.collection('workings').insertMany([
                 {
                     company: {
+                        id: '00000001',
                         name: 'MY GOODJOB COMPANY',
                     },
                     job_title: 'JOB1',
@@ -380,6 +381,7 @@ describe('Workings 工時資訊', function() {
                 },
                 {
                     company: {
+                        id: '00000001',
                         name: 'MY GOODJOB COMPANY',
                     },
                     job_title: 'JOB1',
@@ -387,6 +389,7 @@ describe('Workings 工時資訊', function() {
                 },
                 {
                     company: {
+                        id: '00000001',
                         name: 'MY GOODJOB COMPANY',
                     },
                     job_title: 'JOB2',
@@ -407,6 +410,12 @@ describe('Workings 工時資訊', function() {
                     week_work_time: 40,
                 },
             ]);
+        });
+
+        it('error 422 if no company provided', function(done) {
+            request(app).get('/workings/statistics/by-company')
+                .expect(422)
+                .end(done);
         });
 
         it('依照 company, job_title 來分群資料，結構正確', function(done) {
@@ -459,6 +468,19 @@ describe('Workings 工時資訊', function() {
                     assert.deepPropertyVal(res.body, '0.job_titles.0.average_week_work_time', 20);
                     assert.deepPropertyVal(res.body, '0.job_titles.1._id', 'JOB1');
                     assert.deepPropertyVal(res.body, '0.job_titles.1.average_week_work_time', 15);
+                })
+                .end(done);
+        });
+
+        it('根據統編搜尋', function(done) {
+            request(app).get('/workings/statistics/by-company')
+                .query({company: '00000001'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.lengthOf(res.body, 1);
+                    assert.deepPropertyVal(res.body, '0._id.name', 'MY GOODJOB COMPANY');
+                    assert.deepPropertyVal(res.body, '0.job_titles.0._id', 'JOB2');
+                    assert.deepPropertyVal(res.body, '0.job_titles.1._id', 'JOB1');
                 })
                 .end(done);
         });
