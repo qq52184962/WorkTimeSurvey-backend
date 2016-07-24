@@ -325,7 +325,10 @@ router.get('/statistics/by-company', function(req, res, next) {
     collection.aggregate([
         {
             $match: {
-                'company.name': new RegExp(lodash.escapeRegExp(company.toUpperCase())),
+                $or: [
+                    {'company.name': new RegExp(lodash.escapeRegExp(company.toUpperCase()))},
+                    {'company.id': company},
+                ],
             }
         },
         {
