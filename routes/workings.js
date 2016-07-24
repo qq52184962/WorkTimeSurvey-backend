@@ -317,6 +317,11 @@ router.get('/statistics/by-company', function(req, res, next) {
     const company = req.query.company;
     const collection = req.db.collection('workings');
 
+    if (! company || company === '') {
+        next(new HttpError("company is required", 422));
+        return;
+    }
+
     collection.aggregate([
         {
             $match: {
