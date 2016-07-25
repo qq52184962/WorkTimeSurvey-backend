@@ -10,7 +10,6 @@ node:
     command: npm start
     environment:
         - MONGODB_URI=mongodb://mongo/goodjob
-        - SKIP_FACEBOOK_AUTH=1
         - NODE_ENV=development
 mongo:
     image: mongo
