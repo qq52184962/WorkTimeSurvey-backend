@@ -156,6 +156,19 @@ describe('Workings 工時資訊', function() {
                     .expect(422)
                     .end(done);
             });
+
+            it('can be a floating number', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        week_work_time: "30.5",
+                        company_id: '00000001',
+                    }))
+                    .expect(200)
+                    .expect(function(res) {
+                        assert.deepPropertyVal(res.body, 'working.week_work_time', 30.5);
+                    })
+                    .end(done);
+            });
         });
 
         describe('overtime_frequency 加班頻率', function() {
@@ -179,15 +192,87 @@ describe('Workings 工時資訊', function() {
         });
 
         describe('day_promised_work_time', function() {
-            it('is required');
-            it('should be a number');
-            it('should be a valid number');
+            it('is required', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        day_promised_work_time: -1,
+                    }))
+                    .expect(422)
+                    .end(done);
+            });
+
+            it('should be a number', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        day_promised_work_time: "test",
+                    }))
+                    .expect(422)
+                    .end(done);
+            });
+
+            it('should be a valid number', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        day_promised_work_time: "25",
+                    }))
+                    .expect(422)
+                    .end(done);
+            });
+
+            it('can be a floating number', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        day_promised_work_time: "3.5",
+                        company_id: '00000001',
+                    }))
+                    .expect(200)
+                    .expect(function(res) {
+                        assert.deepPropertyVal(res.body, 'working.day_promised_work_time', 3.5);
+                    })
+                    .end(done);
+            });
         });
         
         describe('day_real_work_time', function() {
-            it('is required');
-            it('should be a number');
-            it('should be a valid number');
+            it('is required', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        day_real_work_time: -1,
+                    }))
+                    .expect(422)
+                    .end(done);
+            });
+
+            it('should be a number', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        day_real_work_time: "test",
+                    }))
+                    .expect(422)
+                    .end(done);
+            });
+
+            it('should be a valid number', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        day_real_work_time: "25",
+                    }))
+                    .expect(422)
+                    .end(done);
+            });
+
+            it('can be a floating number', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        day_real_work_time: "3.5",
+                        company_id: '00000001',
+                    }))
+                    .expect(200)
+                    .expect(function(res) {
+                        assert.deepPropertyVal(res.body, 'working.day_real_work_time', 3.5);
+                    })
+                    .end(done);
+            });
         });
         
         describe('company (公司/單位名稱)', function() {
