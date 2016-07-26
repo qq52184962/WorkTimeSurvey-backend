@@ -316,6 +316,12 @@ function checkQuota(db, author) {
 
 }
 
+/**
+ * @api {get} /workings/statistics/by-company Statistics by given company
+ * @apiGroup Workings
+ * @apiParam {String} company
+ * @apiSuccess {Object[]} .
+ */
 router.get('/statistics/by-company', function(req, res, next) {
     winston.info("/statistics/by-company", {company: req.query.company, ip: req.ip, ips: req.ips});
 
