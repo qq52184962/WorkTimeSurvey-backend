@@ -122,7 +122,6 @@ describe('Workings 工時資訊', function() {
                     }))
                     .expect(200)
                     .expect(function(res) {
-                        console.log(res.body);
                         assert.propertyVal(res.body.working, 'job_title', 'GOODJOB');
                     })
                     .end(done);
