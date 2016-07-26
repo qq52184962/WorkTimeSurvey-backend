@@ -231,7 +231,7 @@ function validateWorking(data) {
     if (! data.week_work_time) {
         throw new HttpError("最近一週實際工時未填", 422);
     }
-    data.week_work_time = parseInt(data.week_work_time);
+    data.week_work_time = parseFloat(data.week_work_time);
     if (isNaN(data.week_work_time)) {
         throw new HttpError("最近一週實際工時必須是數字", 422);
     }
@@ -250,7 +250,7 @@ function validateWorking(data) {
     if (! data.day_promised_work_time) {
         throw new HttpError("工作日表訂工時未填", 422);
     }
-    data.day_promised_work_time = parseInt(data.day_promised_work_time);
+    data.day_promised_work_time = parseFloat(data.day_promised_work_time);
     if (isNaN(data.day_promised_work_time)) {
         throw new HttpError("工作日表訂工時必須是數字", 422);
     }
@@ -261,7 +261,7 @@ function validateWorking(data) {
     if (! data.day_real_work_time) {
         throw new HttpError("工作日實際工時必填", 422);
     }
-    data.day_real_work_time = parseInt(data.day_real_work_time);
+    data.day_real_work_time = parseFloat(data.day_real_work_time);
     if (isNaN(data.day_real_work_time)) {
         throw new HttpError("工作日實際工時必須是數字", 422);
     }
