@@ -411,4 +411,45 @@ router.get('/companies/search', function(req, res, next) {
     });
 });
 
+router.get('/jobs/search', function(req, res, next) {
+    winston.info("/workings/jobs/search", {query: req.query, ip: req.ip, ips: req.ips});
+
+    const search = req.query.key || "";
+    const page = parseInt(req.query.page) || 0;
+
+    if (search === "") {
+        throw new HttpError("key is required", 422);
+    }
+
+    const collection = req.db.collection('workings');
+
+    collection.aggregate([
+        {
+            $sort: {
+                job_title: 1,
+            }
+        },
+        {
+            $match: {
+                job_title: new RegExp(lodash.escapeRegExp(search.toUpperCase())),
+            }
+        },
+        {
+            $group: {
+                _id: "$job_title",
+            }
+        },
+        {
+            $limit: 25 * page + 25,
+        },
+        {
+            $skip: 25 * page,
+        },
+    ]).toArray().then(function(results) {
+        res.send(results);
+    }).catch(function(err) {
+        next(new HttpError("Internal Server Error", 500));
+    });
+});
+
 module.exports = router;
