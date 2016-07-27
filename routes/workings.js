@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const HttpError = require('./errors').HttpError;
+const HttpError = require('../libs/errors').HttpError;
 const facebook = require('../libs/facebook');
 const winston = require('winston');
 const lodash = require('lodash');

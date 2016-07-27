@@ -1,9 +1,9 @@
-var express = require('express');
-var router = express.Router();
-var request = require('request');
-var HttpError = require('./errors').HttpError;
-var lodash = require('lodash');
-var winston = require('winston');
+const express = require('express');
+const router = express.Router();
+const request = require('request');
+const HttpError = require('../libs/errors').HttpError;
+const lodash = require('lodash');
+const winston = require('winston');
 
 /*
  * GET /
@@ -14,8 +14,8 @@ var winston = require('winston');
 router.get('/search', function(req, res, next) {
     winston.info("/jobs/search", {query: req.query, ip: req.ip, ips: req.ips});
 
-    var search = req.query.key || "";
-    var page = req.query.page || 0;
+    const search = req.query.key || "";
+    const page = req.query.page || 0;
     var q;
 
     if (search == "") {
@@ -24,11 +24,11 @@ router.get('/search', function(req, res, next) {
         q = {des: new RegExp(lodash.escapeRegExp(search.toUpperCase())), isFinal: true};
     }
 
-    var collection = req.db.collection('job_titles');
+    const collection = req.db.collection('job_titles');
 
-    collection.find(q, {isFinal: 0}).skip(25 * page).limit(25).toArray().then(function(results) {
+    collection.find(q, {isFinal: 0}).skip(25 * page).limit(25).toArray().then((results) => {
         res.send(results);
-    }).catch(function(err) {
+    }).catch((err) => {
         next(new HttpError("Internal Server Error", 500));
     });
 });
@@ -41,10 +41,10 @@ router.get('/search', function(req, res, next) {
 router.get('/:job_title/statistics', function(req, res, next) {
     winston.info("/jobs/xxx/statistics", {job_title: req.params.job_title, ip: req.ip, ips: req.ips});
 
-    var job_title = req.params.job_title;
-    var collection = req.db.collection('workings');
+    const job_title = req.params.job_title;
+    const collection = req.db.collection('workings');
 
-    var page = req.query.page || 0;
+    const page = req.query.page || 0;
 
     collection.aggregate([
         {
@@ -71,9 +71,9 @@ router.get('/:job_title/statistics', function(req, res, next) {
         {
             $skip: page * 10,
         },
-    ]).toArray().then(function(results) {
+    ]).toArray().then((results) => {
         res.send(results);
-    }).catch(function(err) {
+    }).catch((err) => {
         next(new HttpError("Internal Server Error", 500));
     });
 });

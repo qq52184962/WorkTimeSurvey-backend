@@ -1,8 +1,8 @@
-var express = require('express');
-var router = express.Router();
-var HttpError = require('./errors').HttpError;
-var lodash = require('lodash');
-var winston = require('winston');
+const express = require('express');
+const router = express.Router();
+const HttpError = require('../libs/errors').HttpError;
+const lodash = require('lodash');
+const winston = require('winston');
 
 /*
  * GET /
@@ -13,8 +13,8 @@ var winston = require('winston');
 router.get('/search', function(req, res, next) {
     winston.info("/workings/search", {query: req.query, ip: req.ip, ips: req.ips});
 
-    var search = req.query.key || "";
-    var page = req.query.page || 0;
+    const search = req.query.key || "";
+    const page = req.query.page || 0;
     var q;
 
     if (search == "") {
@@ -28,18 +28,18 @@ router.get('/search', function(req, res, next) {
         };
     }
 
-    var s = {
+    const s = {
         capital: -1,
         type: -1,
         name: 1,
         id: 1,
     };
 
-    var collection = req.db.collection('companies');
+    const collection = req.db.collection('companies');
 
-    collection.find(q).sort(s).skip(25 * page).limit(25).toArray().then(function(results) {
+    collection.find(q).sort(s).skip(25 * page).limit(25).toArray().then((results) => {
         res.send(results);
-    }).catch(function(err) {
+    }).catch((err) => {
         next(new HttpError("Internal Server Error", 500));
     });
 });
