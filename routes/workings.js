@@ -367,4 +367,48 @@ router.get('/statistics/by-company', function(req, res, next) {
     });
 });
 
+router.get('/companies/search', function(req, res, next) {
+    winston.info("/workings/companies/search", {query: req.query, ip: req.ip, ips: req.ips});
+
+    const search = req.query.key || "";
+    const page = parseInt(req.query.page) || 0;
+
+    if (search === "") {
+        throw new HttpError("key is required", 422);
+    }
+
+    const collection = req.db.collection('workings');
+
+    collection.aggregate([
+        {
+            $sort: {
+                company: 1,
+            }
+        },
+        {
+            $match: {
+                $or: [
+                    {'company.name': new RegExp(lodash.escapeRegExp(search.toUpperCase()))},
+                    {'company.id': search},
+                ],
+            }
+        },
+        {
+            $group: {
+                _id: "$company",
+            }
+        },
+        {
+            $limit: 25 * page + 25,
+        },
+        {
+            $skip: 25 * page,
+        },
+    ]).toArray().then(function(results) {
+        res.send(results);
+    }).catch(function(err) {
+        next(new HttpError("Internal Server Error", 500));
+    });
+});
+
 module.exports = router;

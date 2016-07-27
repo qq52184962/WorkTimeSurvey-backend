@@ -587,6 +587,85 @@ describe('Workings 工時資訊', function() {
             return db.collection('workings').remove({});
         });
     });
+
+    describe('GET /workings/companies/search', function() {
+        before('Seeding some workings', function() {
+            return db.collection('workings').insertMany([
+                {
+                    company: {
+                        id: '00000001',
+                        name: 'MY GOODJOB COMPANY',
+                    },
+                    job_title: 'JOB1',
+                    week_work_time: 10,
+                },
+                {
+                    company: {
+                        id: '00000001',
+                        name: 'MY GOODJOB COMPANY',
+                    },
+                    job_title: 'JOB1',
+                    week_work_time: 20,
+                },
+                {
+                    company: {
+                        id: '00000001',
+                        name: 'MY GOODJOB COMPANY',
+                    },
+                    job_title: 'JOB2',
+                    week_work_time: 20,
+                },
+                {
+                    company: {
+                        name: 'YOUR GOODJOB COMPANY',
+                    },
+                    job_title: 'JOB1',
+                    week_work_time: 25,
+                },
+                {
+                    company: {
+                        name: 'OTHER BADJOB COMPANY',
+                    },
+                    job_title: 'JOB1',
+                    week_work_time: 40,
+                },
+            ]);
+        });
+
+        it('error 422 if no key provided', function(done) {
+            request(app).get('/workings/companies/search')
+                .expect(422)
+                .end(done);
+        });
+
+        it('正確搜尋出公司名稱', function(done) {
+            request(app).get('/workings/companies/search')
+                .query({key: 'GOODJOB'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.isArray(res.body);
+                    assert.lengthOf(res.body, 2);
+                    assert.deepProperty(res.body, '0._id');
+                })
+                .end(done);
+        });
+
+        it('小寫關鍵字轉換成大寫', function(done) {
+            request(app).get('/workings/companies/search')
+                .query({key: 'goodjob'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.isArray(res.body);
+                    assert.lengthOf(res.body, 2);
+                    assert.deepProperty(res.body, '0._id');
+                })
+                .end(done);
+        });
+
+        after(function() {
+            return db.collection('workings').remove({});
+        });
+    });
 });
 
 function generatePayload(opt) {
