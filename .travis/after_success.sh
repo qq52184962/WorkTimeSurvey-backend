@@ -2,8 +2,8 @@
 [  "$TRAVIS_PULL_REQUEST" != "false" ] || [  "$TRAVIS_BRANCH" != "master" ] && echo -e "\n" && exit 0
 
 git remote set-url origin $REPO.git
-git config --global user.email "g0v-general@googlegroups.com"
-git config --global user.name "g0v general (via TravisCI)"
+git config --global user.email "findyourgoodjob@gmail.com"
+git config --global user.name "goodjob team (via TravisCI)"
 mkdir -p ~/.ssh
 cat >> ~/.ssh/config <<EOF
 Host *
