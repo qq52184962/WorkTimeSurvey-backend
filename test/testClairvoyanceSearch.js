@@ -128,15 +128,66 @@ describe('Clairvoyance 天眼通 API', function() {
     });
 
     describe('根據職稱搜尋', function() {
-        it('error 422 if no job_title provided');
+        it('error 422 if no job_title provided', function(done) {
+            request(app).get('/clairvoyance/search/by-job')
+                .expect(422)
+                .end(done);
+        });
 
-        it('Search and return the pagination results');
+        it('Search and return the pagination results', function(done) {
+            request(app).get('/clairvoyance/search/by-job')
+                .query({job_title: "TEST"})
+                .expect(200)
+                .expect(function(res) {
+                    assert.propertyVal(res.body, 'total_count', 3);
+                    assert.propertyVal(res.body, 'page', 0);
+                    assert.property(res.body, 'workings');
+                    assert.lengthOf(res.body.workings, 3);
+                    assert.deepProperty(res.body, 'workings.0.job_title');
+                    assert.deepProperty(res.body, 'workings.0.company');
+                    assert.deepProperty(res.body, 'workings.0.week_work_time');
+                    assert.deepProperty(res.body, 'workings.0.created_at');
+                    assert.notDeepProperty(res.body, 'workings.0.author');
+                    assert.notDeepProperty(res.body, 'workings.0._id');
+                })
+                .end(done);
+        });
 
-        it('小寫 job_title 轉換成大寫');
+        it('小寫 job_title 轉換成大寫', function(done) {
+            request(app).get('/clairvoyance/search/by-job')
+                .query({job_title: "test pm"})
+                .expect(200)
+                .expect(function(res) {
+                    assert.property(res.body, 'workings');
+                    assert.lengthOf(res.body.workings, 1);
+                })
+                .end(done);
+        });
 
-        it('job_title match any substring in workings.job_title');
-
-        it('sort workings by created_at desc');
+        it('job_title match any substring in workings.job_title', function(done) {
+            request(app).get('/clairvoyance/search/by-job')
+                .query({job_title: "TEST"})
+                .expect(200)
+                .expect(function(res) {
+                    assert.property(res.body, 'workings');
+                    assert.lengthOf(res.body.workings, 3);
+                })
+                .end(done);
+        });
+    
+        it('sort workings by created_at desc', function(done) {
+            request(app).get('/clairvoyance/search/by-job')
+                .query({job_title: "TEST"})
+                .expect(200)
+                .expect(function(res) {
+                    assert.property(res.body, 'workings');
+                    assert.lengthOf(res.body.workings, 3);
+                    assert.deepPropertyVal(res.body, 'workings.0.week_work_time', 50);
+                    assert.deepPropertyVal(res.body, 'workings.1.week_work_time', 30);
+                    assert.deepPropertyVal(res.body, 'workings.2.week_work_time', 40);
+                })
+                .end(done);
+        });
     });
 
     after(function() {
