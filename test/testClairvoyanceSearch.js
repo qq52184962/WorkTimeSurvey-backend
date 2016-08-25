@@ -54,17 +54,77 @@ describe('Clairvoyance 天眼通 API', function() {
     });
 
     describe('根據公司搜尋', function() {
-        it('error 422 if no company provided');
+        it('error 422 if no company provided', function(done) {
+            request(app).get('/clairvoyance/search/by-company')
+                .expect(422)
+                .end(done);
+        });
 
-        it('Search and return the pagination results');
+        it('Search and return the pagination results', function(done) {
+            request(app).get('/clairvoyance/search/by-company')
+                .query({company: 'MY GOODJOB LIFE'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.propertyVal(res.body, 'total_count', 3);
+                    assert.propertyVal(res.body, 'page', 0);
+                    assert.property(res.body, 'workings');
+                    assert.lengthOf(res.body.workings, 3);
+                    assert.deepProperty(res.body, 'workings.0.job_title');
+                    assert.deepProperty(res.body, 'workings.0.company');
+                    assert.deepProperty(res.body, 'workings.0.week_work_time');
+                    assert.deepProperty(res.body, 'workings.0.created_at');
+                    assert.notDeepProperty(res.body, 'workings.0.author');
+                    assert.notDeepProperty(res.body, 'workings.0._id');
+                })
+                .end(done);
+        });
 
-        it('小寫 company 轉換成大寫');
+        it('小寫 company 轉換成大寫', function(done) {
+            request(app).get('/clairvoyance/search/by-company')
+                .query({company: 'my goodjob Life'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.property(res.body, 'workings');
+                    assert.lengthOf(res.body.workings, 3);
+                })
+                .end(done);
+        });
 
-        it('company match any substring in workings.company.name');
+        it('company match any substring in workings.company.name', function(done) {
+            request(app).get('/clairvoyance/search/by-company')
+                .query({company: 'GOODJOB'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.property(res.body, 'workings');
+                    assert.lengthOf(res.body.workings, 4);
+                })
+                .end(done);
+        });
 
-        it('sort workings by created_at desc');
+        it('sort workings by created_at desc', function(done) {
+            request(app).get('/clairvoyance/search/by-company')
+                .query({company: 'MY GOODJOB LIFE'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.property(res.body, 'workings');
+                    assert.lengthOf(res.body.workings, 3);
+                    assert.deepPropertyVal(res.body, 'workings.0.week_work_time', 30);
+                    assert.deepPropertyVal(res.body, 'workings.1.week_work_time', 20);
+                    assert.deepPropertyVal(res.body, 'workings.2.week_work_time', 40);
+                })
+                .end(done);
+        });
 
-        it('根據統編搜尋');
+        it('根據統編搜尋', function(done) {
+            request(app).get('/clairvoyance/search/by-company')
+                .query({company: '00000002'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.property(res.body, 'workings');
+                    assert.lengthOf(res.body.workings, 1);
+                })
+                .end(done);
+        });
     });
 
     describe('根據職稱搜尋', function() {
