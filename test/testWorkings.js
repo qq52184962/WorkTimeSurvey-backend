@@ -286,6 +286,196 @@ describe('Workings 工時資訊', function() {
             });
         });
 
+        describe('sector', function() {
+            it('can be inserted', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        company_id: '00000001',
+                        sector: 'Hello world',
+                    }))
+                    .expect(200)
+                    .expect(function(res) {
+                        assert.propertyVal(res.body.working, 'sector', 'Hello world');
+                    })
+                    .end(done);
+            });
+        });
+
+        describe('has_overtime_salary', function() {
+            for (let input of ['yes', 'no', 'don\'t know']) { 
+                it('should be ' + input, function(done) {
+                    request(app).post('/workings')
+                        .send(generatePayload({
+                            company_id: '00000001',
+                            has_overtime_salary: input,
+                        }))
+                        .expect(200)
+                        .expect(function(res) {
+                            assert.propertyVal(res.body.working, 'has_overtime_salary', input);
+                        })
+                        .end(done);
+                });
+            }
+            for (let input of ['', undefined]) { 
+                it('wouldn\'t be returned if it is "' + input + '"', function(done) {
+                    request(app).post('/workings')
+                        .send(generatePayload({
+                            company_id: '00000001',
+                            has_overtime_salary: input,
+                        }))
+                        .expect(200)
+                        .expect(function(res) {
+                            assert.notProperty(res.body.working, 'has_overtime_salary');
+                        })
+                        .end(done);
+                });
+            }
+
+            it('wouldn\'t be returned if there is no such field in payload', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        company_id: '00000001',
+                    }))
+                    .expect(200)
+                    .expect(function(res) {
+                        assert.notProperty(res.body.working, 'has_overtime_salary');
+                    })
+                    .end(done);
+            });
+
+            it('should be error if request others', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        company_id: '00000001',
+                        has_overtime_salary: '-1',
+                    }))
+                    .expect(422)
+                    .end(done);
+            });
+        });
+
+        describe('is_overtime_salary_legal', function(){
+            for (let input of ['yes', 'no', 'don\'t know']) { 
+                it('should be ' + input, function(done) {
+                    request(app).post('/workings')
+                        .send(generatePayload({
+                            company_id: '00000001',
+                            has_overtime_salary: 'yes',
+                            is_overtime_salary_legal: input,
+                        }))
+                        .expect(200)
+                        .expect(function(res) {
+                            assert.propertyVal(res.body.working, 'is_overtime_salary_legal', input);
+                        })
+                        .end(done);
+                });
+            }
+            for (let preInput of ['no', 'don\'t know', '-1', '', undefined]){
+                it('should be error if has_overtime_salary is not yes', function(done) {
+                    request(app).post('/workings')
+                        .send(generatePayload({
+                            company_id: '00000001',
+                            has_overtime_salary: preInput,
+                            is_overtime_salary_legal: 'yes',
+                        }))
+                        .expect(422)
+                        .end(done);
+                });    
+            }
+            
+            for (let input of ['', undefined]) { 
+                it('wouldn\'t be returned if it is "' + input + '"', function(done) {
+                    request(app).post('/workings')
+                        .send(generatePayload({
+                            company_id: '00000001',
+                            has_overtime_salary: 'yes',
+                            is_overtime_salary_legal: input,
+                        }))
+                        .expect(200)
+                        .expect(function(res) {
+                            assert.notProperty(res.body.working, 'is_overtime_salary_legal');
+                        })
+                        .end(done);
+                });
+            }
+
+            it('wouldn\'t be returned if there is no such field in payload', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        company_id: '00000001',
+                    }))
+                    .expect(200)
+                    .expect(function(res) {
+                        assert.notProperty(res.body.working, 'is_overtime_salary_legal');
+                    })
+                    .end(done);
+            });
+
+            it('should be error if request others', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        company_id: '00000001',
+                        has_overtime_salary: 'yes',
+                        is_overtime_salary_legal: '-1',
+                    }))
+                    .expect(422)
+                    .end(done);
+            });
+        });
+
+        describe('has_compensatory_dayoff', function() {
+            for (let input of ['yes', 'no', 'don\'t know']) { 
+                it('should be ' + input, function(done) {
+                    request(app).post('/workings')
+                        .send(generatePayload({
+                            company_id: '00000001',
+                            has_compensatory_dayoff: input,
+                        }))
+                        .expect(200)
+                        .expect(function(res) {
+                            assert.propertyVal(res.body.working, 'has_compensatory_dayoff', input);
+                        })
+                        .end(done);
+                });
+            }
+            for (let input of ['', undefined]) { 
+                it('wouldn\'t be returned if it is "' + input + '"', function(done) {
+                    request(app).post('/workings')
+                        .send(generatePayload({
+                            company_id: '00000001',
+                            has_compensatory_dayoff: input,
+                        }))
+                        .expect(200)
+                        .expect(function(res) {
+                            assert.notProperty(res.body.working, 'has_compensatory_dayoff');
+                        })
+                        .end(done);
+                });
+            }
+
+            it('wouldn\'t be returned if there is no such field in payload', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        company_id: '00000001',
+                    }))
+                    .expect(200)
+                    .expect(function(res) {
+                        assert.notProperty(res.body.working, 'has_compensatory_dayoff');
+                    })
+                    .end(done);
+            });
+
+            it('should be error if request others', function(done) {
+                request(app).post('/workings')
+                    .send(generatePayload({
+                        company_id: '00000001',
+                        has_compensatory_dayoff: '-1',
+                    }))
+                    .expect(422)
+                    .end(done);
+            });
+        });
+
         describe('company', function() {
             it('只給 company_id 成功新增', function(done) {
                 request(app).post('/workings')
@@ -782,6 +972,13 @@ function generatePayload(opt) {
             }
         } else {
             payload[key] = valid[key];
+        }
+    }
+    for (let key in opt) {
+        if (opt[key] === -1) {
+            continue;
+        } else {
+            payload[key] = opt[key];
         }
     }
 
