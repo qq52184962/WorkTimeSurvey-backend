@@ -440,6 +440,63 @@ router.get('/statistics/by-company', function(req, res, next) {
     });
 });
 
+
+/**
+ * @api {get} /workings/search-and-group/by-job-title search by given job_title
+ * @apiGroup Workings
+ * @apiParam {String} job_title
+ * @apiSuccess {Object[]} .
+ */
+router.get('/search-and-group/by-job-title', function(req, res, next) {
+    winston.info("/workings/search-and-group/by-job-title", {job_title: req.query.job_title, ip: req.ip, ips: req.ips});
+
+    const job_title = req.query.job_title;
+    const collection = req.db.collection('workings');
+
+    if (! job_title || job_title === '') {
+        next(new HttpError("job_title is required", 422));
+        return;
+    }
+
+    collection.aggregate([
+        {
+            $match: {
+                job_title: new RegExp(lodash.escapeRegExp(job_title.toUpperCase() ) ),
+            }
+        },
+        {
+            $sort: {
+                created_at: -1,
+            }
+        },
+        {
+            $group: {
+                _id: "$job_title",
+                workings: {$push: {
+                    company: "$company",
+                    week_work_time: "$week_work_time",
+                    overtime_frequency: "$overtime_frequency",
+                    day_promised_work_time: "$day_promised_work_time",
+                    day_real_work_time: "$day_real_work_time",
+                    created_at: "$created_at",
+                    sector: "$sector",
+                    }
+                },
+                count: {$sum: 1},
+            }
+        },
+        {
+            $sort: {
+                count: -1,
+            }
+        },
+    ]).toArray().then(function(results) {
+        res.send(results);
+    }).catch(function(err) {
+        next(new HttpError("Internal Server Error", 500));
+    });
+});
+
 /**
  * @api {get} /workings/companies/search 搜尋工時資訊中的公司
  * @apiGroup Workings
