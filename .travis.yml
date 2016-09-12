@@ -7,13 +7,13 @@ services:
     - mongodb
 
 addons:
-  apt:
-    sources:
-      - mongodb-upstart
-      - mongodb-3.2-precise
-    packages:
-      - mongodb-org-server
-      - mongodb-org-shell
+    apt:
+        sources:
+            - mongodb-upstart
+            - mongodb-3.2-precise
+        packages:
+            - mongodb-org-server
+            - mongodb-org-shell
 
 branches:
     except:
@@ -29,6 +29,6 @@ install:
     - npm install
 
 script:
-    - npm test
+    - npm test -- --timeout 30s
 
 after_success: ".travis/after_success.sh"
