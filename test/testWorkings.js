@@ -794,6 +794,285 @@ describe('Workings 工時資訊', function() {
         });
     });
 
+    describe('GET /search-and-group/by-company', function() {
+        before('Seeding some workings', function() {
+            return db.collection('workings').insertMany([
+                {
+                    job_title: "ENGINEER1", 
+                    company: {id: "84149961", name: "COMPANY1" }, 
+                    week_work_time: 40,
+                    overtime_frequency: 0,
+                    day_promised_work_time: 8,
+                    day_real_work_time: 8,
+                    created_at: new Date("2016-07-21T14:15:44.929Z"),
+                    sector: "TAIPEI",
+                    has_overtime_salary: "yes",
+                    is_overtime_salary_legal: "yes",
+                    has_compensatory_dayoff: "yes",
+                }, 
+                {
+                    job_title: "ENGINEER1", 
+                    company: {id: "84149961", name: "COMPANY1"}, 
+                    week_work_time: 40,
+                    overtime_frequency: 2,
+                    day_promised_work_time: 8,
+                    day_real_work_time: 10,
+                    created_at: new Date("2016-07-20T14:15:44.929Z"),
+                    sector: "TAIPEI",
+                    has_overtime_salary: "yes",
+                    is_overtime_salary_legal: "no",
+                    has_compensatory_dayoff: "no",
+                },
+                {
+                    job_title: "ENGINEER1", 
+                    company: {id: "84149961", name: "COMPANY1"}, 
+                    week_work_time: 55,
+                    overtime_frequency: 3,
+                    day_promised_work_time: 8,
+                    day_real_work_time: 11,
+                    created_at: new Date("2016-07-22T14:15:44.929Z"),
+                    sector: "TAINAN",
+                    has_overtime_salary: "yes",
+                    is_overtime_salary_legal: "don't know",
+                    has_compensatory_dayoff: "no",
+                },
+                {
+                    job_title: "ENGINEER2", 
+                    company: {id: "84149961", name: "COMPANY1"}, 
+                    week_work_time: 45,
+                    overtime_frequency: 1,
+                    day_promised_work_time: 9,
+                    day_real_work_time: 10,
+                    created_at: new Date("2016-07-23T14:15:44.929Z"),
+                    sector: "TAIPEI",
+                    has_overtime_salary: "no",
+                    has_compensatory_dayoff: "yes",
+                },
+                {
+                    job_title: "ENGINEER2", 
+                    company: {id: "84149961", name: "COMPANY1"}, 
+                    week_work_time: 47,
+                    overtime_frequency: 3,
+                    day_promised_work_time: 7,
+                    day_real_work_time: 10,
+                    created_at: new Date("2016-07-20T14:15:44.929Z"),
+                    sector: "TAICHUNG",
+                    has_overtime_salary: "don't know",
+                    has_compensatory_dayoff: "don't know",
+                },
+                {
+                    job_title: "ENGINEER2", 
+                    company: {id: "84149961", name: "COMPANY1"}, 
+                    week_work_time: 38,
+                    overtime_frequency: 0,
+                    day_promised_work_time: 7,
+                    day_real_work_time: 7,
+                    created_at: new Date("2016-07-25T14:15:44.929Z"),
+                    sector: "TAICHUNG",
+                },
+                {
+                    job_title: "ENGINEER2", 
+                    company: {id: "84149961", name: "COMPANY1"}, 
+                    week_work_time: 44,
+                    overtime_frequency: 1,
+                    day_promised_work_time: 8,
+                    day_real_work_time: 7,
+                    created_at: new Date("2016-07-29T14:15:44.929Z"),
+                    sector: "TAICHUNG",
+                    has_overtime_salary: "yes",
+                },
+                {
+                    job_title: "ENGINEER2", 
+                    company:{name: "COMPANY2"},
+                    week_work_time: 60,
+                    overtime_frequency: 3,
+                    day_promised_work_time: 8,
+                    day_real_work_time: 10,
+                    created_at: new Date("2016-07-20T14:15:44.929Z"),
+                    sector: "TAIPEI",
+                    has_overtime_salary: "no",
+                    has_compensatory_dayoff: "don't know",
+                },
+                {
+                    job_title: "ENGINEER3", 
+                    company:{name: "COM_PANY"},
+                    week_work_time: 66,
+                    overtime_frequency: 3,
+                    day_promised_work_time: 8,
+                    day_real_work_time: 12,
+                    created_at: new Date("2016-07-30T14:15:44.929Z"),
+                    sector: "TAIPEI",
+                    has_overtime_salary: "no",
+                    has_compensatory_dayoff: "yes",
+                },
+            ]);
+        });
+
+        it('error 422 if no company provided', function(done) {
+            request(app).get('/workings/search-and-group/by-company')
+                .expect(422)
+                .end(done);
+        });
+
+        it('依照 company 來分群資料，結構正確 (workings.length >= 5)', function(done) {
+            request(app).get('/workings/search-and-group/by-company')
+                .query({company: 'COMPANY1'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.isArray(res.body);
+                    assert.deepProperty(res.body[0], '_id');
+                    assert.deepProperty(res.body[0], '_id.name');
+                    assert.deepProperty(res.body[0], 'workings');
+                    assert.isArray(res.body[0].workings);
+                    assert(res.body[0].workings.length >= 5);
+                    assert.deepProperty(res.body[0], 'workings.0.job_title');
+                    assert.deepProperty(res.body[0], 'workings.0.week_work_time');
+                    assert.deepProperty(res.body[0], 'workings.0.overtime_frequency');
+                    assert.deepProperty(res.body[0], 'workings.0.day_promised_work_time');
+                    assert.deepProperty(res.body[0], 'workings.0.day_real_work_time');
+                    assert.deepProperty(res.body[0], 'workings.0.created_at');
+                    assert.deepProperty(res.body[0], 'workings.0.sector');
+                    assert.deepProperty(res.body[0], 'count');
+                    assert.deepProperty(res.body[0], 'has_overtime_salary_count');
+                    assert.deepProperty(res.body[0], 'has_overtime_salary_count.yes');
+                    assert.deepProperty(res.body[0], 'has_overtime_salary_count.no');
+                    assert.deepProperty(res.body[0], "has_overtime_salary_count.don't know");
+                    assert.deepProperty(res.body[0], 'is_overtime_salary_legal_count');
+                    assert.deepProperty(res.body[0], 'is_overtime_salary_legal_count.yes');
+                    assert.deepProperty(res.body[0], 'is_overtime_salary_legal_count.no');
+                    assert.deepProperty(res.body[0], "is_overtime_salary_legal_count.don't know");
+                    assert.deepProperty(res.body[0], 'has_compensatory_dayoff_count');
+                    assert.deepProperty(res.body[0], 'has_compensatory_dayoff_count.yes');
+                    assert.deepProperty(res.body[0], 'has_compensatory_dayoff_count.no');
+                    assert.deepProperty(res.body[0], "has_compensatory_dayoff_count.don't know");
+                })
+                .end(done);
+        });
+
+        it('依照 company 來分群資料，結構正確 (workings.length < 5)', function(done) {
+            request(app).get('/workings/search-and-group/by-company')
+                .query({company: 'COMPANY2'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.isArray(res.body);
+                    assert.deepProperty(res.body[0], '_id');
+                    assert.deepProperty(res.body[0], '_id.name');
+                    assert.deepProperty(res.body[0], 'workings');
+                    assert.isArray(res.body[0].workings);
+                    assert(res.body[0].workings.length < 5);
+                    assert.deepProperty(res.body[0], 'workings.0.job_title');
+                    assert.deepProperty(res.body[0], 'workings.0.week_work_time');
+                    assert.deepProperty(res.body[0], 'workings.0.overtime_frequency');
+                    assert.deepProperty(res.body[0], 'workings.0.day_promised_work_time');
+                    assert.deepProperty(res.body[0], 'workings.0.day_real_work_time');
+                    assert.deepProperty(res.body[0], 'workings.0.created_at');
+                    assert.deepProperty(res.body[0], 'workings.0.sector');
+                    assert.deepProperty(res.body[0], 'count');
+                    assert.notDeepProperty(res.body[0], 'has_overtime_salary_count');
+                    assert.notDeepProperty(res.body[0], 'is_overtime_salary_legal_count');
+                    assert.notDeepProperty(res.body[0], 'has_compensatory_dayoff_count');
+                })
+                .end(done);
+        });
+        it('小寫 company query 轉換成大寫', function(done) {
+            request(app).get('/workings/search-and-group/by-company')
+                .query({company: 'company1'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.lengthOf(res.body, 1);
+                    assert.deepPropertyVal(res.body, '0._id.name', 'COMPANY1');
+                })
+                .end(done);
+        });
+
+        it('company match any substring in _id.name', function(done) {
+            request(app).get('/workings/search-and-group/by-company')
+                .query({company: 'COMPANY'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.lengthOf(res.body, 2);
+                    assert.deepPropertyVal(res.body, '0._id.name', 'COMPANY1');
+                    assert.deepPropertyVal(res.body, '1._id.name', 'COMPANY2');
+                })
+                .end(done);
+        });
+
+        it('依照 created_at 由新到舊排序 group data', function(done) {
+            request(app).get('/workings/search-and-group/by-company')
+                .query({company: 'COMPANY1'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.lengthOf(res.body, 1);
+                    assert.deepPropertyVal(res.body, '0._id.name', 'COMPANY1');
+                    let workings = res.body[0].workings;
+                    for(let idx=0; idx < workings.length-1; ++idx) {
+                        assert.notBeforeDate(new Date(workings[idx].created_at), new Date(workings[idx+1].created_at));
+                    }
+                })
+                .end(done);
+        });
+
+        it('依照 group data 數量由大到小排序 company', function(done) {
+            request(app).get('/workings/search-and-group/by-company')
+                .query({company: 'COMPANY'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.lengthOf(res.body, 2);
+                    for(let idx=0; idx < res.body.length-1; ++idx) {
+                        assert(res.body[idx].workings.length >= res.body[idx+1].workings.length);
+                    }
+                })
+                .end(done);
+        });
+
+        it('根據統編搜尋', function(done) {
+            request(app).get('/workings/search-and-group/by-company')
+                .query({company: '84149961'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.lengthOf(res.body, 1);
+                    assert.deepPropertyVal(res.body, '0._id.id', '84149961');
+                })
+                .end(done);
+        });
+
+        it('當 workings.length >= 5, has_overtime_salary_count values 加總會小於等於 workings.length', function(done) {
+            request(app).get('/workings/search-and-group/by-company')
+                .query({company: 'COMPANY1'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.lengthOf(res.body, 1);
+                    let total = 0;
+                    total += res.body[0].has_overtime_salary_count.yes;
+                    total += res.body[0].has_overtime_salary_count.no;
+                    total += res.body[0].has_overtime_salary_count["don't know"];
+                    assert(total <= res.body[0].workings.length);
+
+                })
+                .end(done);
+        });
+
+        it('當 workings.length >= 5, has_overtime_salary_count.yes 會大於等於 is_overtime_salary_legal_count values 加總'
+           , function(done) {
+            request(app).get('/workings/search-and-group/by-company')
+                .query({company: 'COMPANY1'})
+                .expect(200)
+                .expect(function(res) {
+                    assert.lengthOf(res.body, 1);
+                    let total = 0;
+                    total += res.body[0].is_overtime_salary_legal_count.yes;
+                    total += res.body[0].is_overtime_salary_legal_count.no;
+                    total += res.body[0].is_overtime_salary_legal_count["don't know"];
+                    assert(res.body[0].has_overtime_salary_count.yes >= total);
+                })
+                .end(done);
+        });
+
+        after(function() {
+            return db.collection('workings').remove({});
+        });
+    });
+
     describe('GET /search-and-group/by-job-title', function() {
         before('Seeding some workings', function() {
             return db.collection('workings').insertMany([
