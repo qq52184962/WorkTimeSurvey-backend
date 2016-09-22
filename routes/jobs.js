@@ -37,49 +37,4 @@ router.get('/search', function(req, res, next) {
     });
 });
 
-/*
- * GET /:job_title
- * [page = 0]
- * Show 10 results per page
- */
-router.get('/:job_title/statistics', function(req, res, next) {
-    winston.info("/jobs/xxx/statistics", {job_title: req.params.job_title, ip: req.ip, ips: req.ips});
-
-    const job_title = req.params.job_title;
-    const collection = req.db.collection('workings');
-
-    const page = req.query.page || 0;
-
-    collection.aggregate([
-        {
-            $match: {
-                job_title: job_title,
-            }
-        },
-        {
-            $group: {
-                _id: "$company",
-                week_work_times: {$push: "$week_work_time"},
-                average_week_work_time: {$avg: "$week_work_time"},
-                count: {$sum: 1},
-            }
-        },
-        {
-            $sort: {
-                average_week_work_time: -1,
-            }
-        },
-        {
-            $limit: page * 10 + 10,
-        },
-        {
-            $skip: page * 10,
-        },
-    ]).toArray().then((results) => {
-        res.send(results);
-    }).catch((err) => {
-        next(new HttpError("Internal Server Error", 500));
-    });
-});
-
 module.exports = router;
