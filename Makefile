@@ -1,7 +1,7 @@
-DOCKER = docker exec worktimesurveybackend_node_1
+NODE = docker-compose exec -T node
 
 all:
 
 .PHONY: test
 test:
-	$(DOCKER) npm test
+	$(NODE) npm test

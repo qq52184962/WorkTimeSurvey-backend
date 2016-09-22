@@ -1,17 +1,19 @@
-node:
+version: '2'
+services:
+  node:
     image: node
     volumes:
-        - ./:/app
+      - ./:/app
     ports:
-        - "12000:3000"
+      - "12000:3000"
     links:
-        - mongo:mongo
+      - mongo:mongo
     working_dir: /app
     command: npm start
     environment:
-        - MONGODB_URI=mongodb://mongo/goodjob
-        - NODE_ENV=development
-mongo:
+      - MONGODB_URI=mongodb://mongo/goodjob
+      - NODE_ENV=development
+  mongo:
     image: mongo
     volumes:
-        - ./db:/data/db
+      - ./db:/data/db
