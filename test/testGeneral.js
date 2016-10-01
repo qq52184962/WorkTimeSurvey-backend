@@ -1,13 +1,13 @@
 const assert = require('chai').assert;
 const request = require('supertest');
 const app = require('../app');
-const MongoClient = require('mongodb').MongoClient;
 
 describe('CORS', function() {
     const client_origins = [
         'http://localhost:8080',
         'http://localhost:8000',
         'https://worktime.goodjob.life',
+        'http://hello.goodjob.life',
     ];
 
     for (let origin of client_origins) {
