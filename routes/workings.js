@@ -58,7 +58,7 @@ if (! process.env.SKIP_FACEBOOK_AUTH) {
     router.post('/', function(req, res, next) {
         var access_token = req.body.access_token;
 
-        facebook.access_token_auth(access_token).then(function(facebook) {
+        facebook.accessTokenAuth(access_token).then(function(facebook) {
             winston.info("facebook auth success", {access_token: access_token, ip: req.ip, ips: req.ips});
 
             req.facebook = facebook;

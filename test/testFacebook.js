@@ -8,7 +8,7 @@ const nock = require('nock');
 describe('libs/facebook.js', function() {
     describe('accessTokenAuth', function() {
         it('rejected if no access_token is passed', function() {
-            return assert.isRejected(facebook.access_token_auth());
+            return assert.isRejected(facebook.accessTokenAuth());
         });
 
         it('rejected if response contain error', function() {
@@ -22,7 +22,7 @@ describe('libs/facebook.js', function() {
                     format: "json",
                 })
                 .reply(200, response);
-            return assert.isRejected(facebook.access_token_auth(access_token));
+            return assert.isRejected(facebook.accessTokenAuth(access_token));
         });
 
         it('fullfilled if response is correct', function() {
@@ -36,7 +36,7 @@ describe('libs/facebook.js', function() {
                     format: "json",
                 })
                 .reply(200, response);
-            return assert.becomes(facebook.access_token_auth(access_token), response);
+            return assert.becomes(facebook.accessTokenAuth(access_token), response);
         });
     });
 });
