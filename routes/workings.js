@@ -4,6 +4,7 @@ const HttpError = require('../libs/errors').HttpError;
 const facebook = require('../libs/facebook');
 const winston = require('winston');
 const lodash = require('lodash');
+const helper = require('./workings_helper');
 
 /**
  * @api {get} /workings/latest 最新工時資訊
@@ -158,22 +159,7 @@ router.post('/', function(req, res, next) {
      * So, here, the data are well-down
      */
 
-    var collection = req.db.collection("workings");
-    var companyCollection = req.db.collection("companies");
-
-    // use company id to search company
-    function searchCompanyById(id) {
-        return companyCollection.find({
-            id: id,
-        }).toArray();
-    }
-
-    // use company name to search company
-    function searchCompanyByName(name) {
-        return companyCollection.find({
-            name: name,
-        }).toArray();
-    }
+    const collection = req.db.collection("workings");
 
     Promise.resolve(data).then(function(data) {
         /*
@@ -185,35 +171,11 @@ router.post('/', function(req, res, next) {
          */
         const working = data.working;
 
-        if (working.company.id) {
-            return searchCompanyById(working.company.id).then(function(results) {
-                if (results.length === 0) {
-                    throw new HttpError("公司統編不正確", 422);
-                }
+        return helper.normalizeCompany(req.db, working.company.id, working.query).then(company => {
+            working.company = company;
 
-                working.company.name = results[0].name;
-                return data;
-            });
-        } else {
-            return searchCompanyById(working.query).then(function(results) {
-                if (results.length === 0) {
-                    return searchCompanyByName(working.query.toUpperCase()).then(function(results) {
-                        if (results.length === 1) {
-                            working.company.id = results[0].id;
-                            working.company.name = results[0].name;
-                            return data;
-                        } else {
-                            working.company.name = working.query.toUpperCase();
-                            return data;
-                        }
-                    });
-                } else {
-                    working.company.id = results[0].id;
-                    working.company.name = results[0].name;
-                    return data;
-                }
-            });
-        }
+            return data;
+        });
     }).then(function(data) {
         const author = data.working.author;
 
