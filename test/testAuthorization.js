@@ -1,25 +1,23 @@
-describe('Authorization middleware', function() {
-    const req = {};
+const chai = require('chai');
+chai.use(require("chai-as-promised"));
+const assert = chai.assert;
+const MongoClient = require('mongodb').MongoClient;
+const redis = require('redis');
+const HttpError = require('../libs/errors').HttpError;
+const authorizationMiddleware = require('../middlewares/authorization');
 
-    before(function() {
-        // setup user_id
-        req.user_id = 'peter.shih';
-        // setup db
-        return require('mongodb').MongoClient
-        .connect(process.env.MONGODB_URI)
-        .then(function(db) {
-            req.db = db;
-        })
-        // setup redis
-        .then(new Promise(function(resolve, reject) {
-            require('../middlewares').expressRedisDb('')(req, {}, err => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        }));
+describe('Authorization middleware', function() {
+    let db;
+    let redis_client;
+
+    before('Setup MongoDB', function() {
+        return MongoClient.connect(process.env.MONGODB_URI).then(function(_db) {
+            db = _db;
+        });
+    });
+
+    before('Setup Redis', function() {
+        redis_client = redis.createClient({'url': process.env.REDIS_URL});
     });
 
     // generate test data for count combinations
@@ -41,13 +39,13 @@ describe('Authorization middleware', function() {
             before(function() {
                 // insert test data into db
                 if (data.counts) {
-                    return req.db.collection('authors').insert({
+                    return db.collection('authors').insert({
                         _id: {
                             id: 'peter.shih',
                             type: 'facebook',
                         },
                         queries_count: data.counts.queries_count,
-                    }).then(() => req.db.collection('references').insert({
+                    }).then(() => db.collection('references').insert({
                         user: {
                             id: 'peter.shih',
                             type: 'facebook',
@@ -58,37 +56,126 @@ describe('Authorization middleware', function() {
             });
 
             it('search permission for user', function(done) {
-                require('../middlewares/authorization')(req, {}, function(err) {
-                    if (!err && !data.expected || err && data.expected) {
-                        done('Not as expected');
-                    } else {
-                        done();
-                    }
-                });
-            });
+                // build the fake request
+                const req = {
+                    user_id: 'peter.shih',
+                    db: db,
+                    redis_client: redis_client,
+                };
 
-            it('checkout redis', function(done) {
-                // second access to permission will checkout redis first
-                req.redis_client.get('peter.shih', (err, reply) => {
-                    if (err) {
-                        done(err);
-                    } else if (reply && data.expected) {
+                // I expect next is called, so I can check here
+                authorizationMiddleware(req, {}, function(err) {
+                    try {
+                        if (data.expected === true) {
+                            assert.isUndefined(err);
+                        } else {
+                            assert.instanceOf(err, HttpError);
+                            assert.equal(err.status, 403);
+                        }
                         done();
-                    } else if (!reply && !data.expected) {
-                        done();
-                    } else {
-                        done('Incorrect key-value in redis');
+                    } catch (e) {
+                        // assert fail
+                        done(e);
                     }
                 });
             });
 
             after(function() {
-                return Promise.all([
-                    req.db.collection('authors').remove({}),
-                    req.db.collection('references').remove({}),
-                    req.redis_client.flushall(),
-                ]);
+                return db.collection('authors').remove({});
             });
+
+            after(function() {
+                return db.collection('references').remove({});
+            });
+
+            after(function(done) {
+                redis_client.flushall(done);
+            });
+        });
+    });
+
+    describe('redis cached', function() {
+        before(function(done) {
+            redis_client.set('permission_peter.shih', true, done);
+        });
+
+        before(function() {
+            return db.collection('authors').insertMany([
+                {
+                    _id: {
+                        id: 'mark86092',
+                        type: 'facebook',
+                    },
+                    queries_count: 1,
+                },
+                {
+                    _id: {
+                        id: 'test',
+                        type: 'facebook',
+                    },
+                    queries_count: 0,
+                },
+            ]);
+        });
+
+        it('success if redis cached', function(done) {
+            const req = {
+                user_id: 'peter.shih',
+                db: db,
+                redis_client: redis_client,
+            };
+
+            authorizationMiddleware(req, {}, function(err) {
+                try {
+                    assert.isUndefined(err);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
+
+        it('lookup mongo success if redis is not cached', function(done) {
+            const req = {
+                user_id: 'mark86092',
+                db: db,
+                redis_client: redis_client,
+            };
+
+            authorizationMiddleware(req, {}, function(err) {
+                try {
+                    assert.isUndefined(err);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
+
+        it('fail if lookup mongo fail and redis is not cached', function(done) {
+            const req = {
+                user_id: 'test',
+                db: db,
+                redis_client: redis_client,
+            };
+
+            authorizationMiddleware(req, {}, function(err) {
+                try {
+                    assert.instanceOf(err, HttpError);
+                    assert.equal(err.status, 403);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
+
+        after(function(done) {
+            redis_client.flushall(done);
+        });
+
+        after(function() {
+            return db.collection('authors').remove({});
         });
     });
 });
