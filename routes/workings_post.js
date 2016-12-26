@@ -352,6 +352,8 @@ function main(req, res, next) {
             type: req.custom.salary_type,
             amount: req.custom.salary_amount,
         };
+
+        working.estimated_hourly_wage = helper.calculateEstimatedHourlyWage(working);
     }
     if (working.is_currently_employed === 'no') {
         working.data_time = {
