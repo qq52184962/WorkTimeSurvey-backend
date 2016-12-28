@@ -1,6 +1,8 @@
 const HttpError = require('../libs/errors').HttpError;
+const ObjectIdError = require('../libs/errors').ObjectIdError;
 const winston = require('winston');
 const helper = require('./workings_helper');
+const recommendation = require('../libs/recommendation');
 
 /*
  * [req.custom.facebook]
@@ -48,6 +50,8 @@ function collectData(req, res) {
         "has_compensatory_dayoff",
         // salary data
         "experience_in_year",
+        //user recommendation data
+        "recommendation_string",
     ].forEach(function(field, i) {
         if (checkBodyField(req, field)) {
             working[field] = req.body[field];
@@ -371,6 +375,9 @@ function main(req, res, next) {
     const collection = req.db.collection("workings");
 
     /*
+     *  這邊處理需要呼叫async函數的部份
+     */
+    /*
      * 如果使用者有給定 company id，將 company name 補成查詢到的公司
      *
      * 如果使用者是給定 company name，如果只找到一間公司，才補上 id
@@ -379,6 +386,36 @@ function main(req, res, next) {
      */
     helper.normalizeCompany(req.db, working.company.id, company_query).then(company => {
         working.company = company;
+    }).then(() => {
+        //這邊嘗試從recommendation_string去取得推薦使用者的資訊
+        if (working.recommendation_string) {
+            return recommendation.getUserByRecommendationString(req.db, working.recommendation_string).then(
+                result => {
+                    //if no error but still cannot find user
+                    if (result === null) {
+                        throw new HttpError('無法找到推薦者，請確認網址是否正確、或有更動到原始網址', 422);
+                    } else {
+                        return result;
+                    }
+                },
+                err => {
+                    //if recommendation_string is not valid
+                    if (err instanceof ObjectIdError) {
+                        throw new HttpError('推薦者參照字串格式錯誤，請確認網址是否正確、或有更動到原始網址', 422);
+                    } else {
+                        throw err;
+                    }
+                });
+        } else {
+            return null;
+        }
+    }).then((rec_user) => {
+        if (rec_user !== null) {
+            working.recommended_by = rec_user;
+        }
+        if (working.recommendation_string) {
+            delete working.recommendation_string;
+        }
     }).then(() => {
         const author = working.author;
 
@@ -389,7 +426,8 @@ function main(req, res, next) {
         return collection.insert(working);
     }).then(() => {
         winston.info("workings insert data success", {id: working._id, ip: req.ip, ips: req.ips});
-
+        //delete some sensitive information before sending response
+        delete response_data.working.recommended_by;
         res.send(response_data);
     }).catch(function(err) {
         winston.info("workings insert data fail", {id: working._id, ip: req.ip, ips: req.ips, err: err});
