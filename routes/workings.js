@@ -6,26 +6,8 @@ const winston = require('winston');
 const lodash = require('lodash');
 const post_helper = require('./workings_post');
 const middleware = require('./middleware');
-const authenticationLib = require('../libs/authentication');
-const authorizationLib = require('../libs/authorization');
 
-router.get('/', function(req, res, next) {
-    const db = req.redis_client;
-    const access_token = req.query.access_token;
-    req.custom = {};
-
-    if (typeof access_token !== "string") {
-        next();
-    } else {
-        authenticationLib.cachedFacebookAuthentication(db, access_token)
-            .then(account => authorizationLib.cachedSearchPermissionAuthorization(db, account))
-            .then(() => {
-                // the client has permission
-                req.custom.search_permission = true;
-            })
-            .then(() => next(), () => next());
-    }
-});
+router.get('/', middleware.checkSearchPermission);
 router.get('/', middleware.sort_by);
 router.get('/', middleware.pagination);
 router.get('/', function(req, res, next) {
@@ -102,9 +84,18 @@ router.post('/', (req, res, next) => {
     post_helper.validation(req, res).then(next, next);
 }, post_helper.main);
 
+router.get('/search_by/company/group_by/company', middleware.checkSearchPermission);
 router.use('/search_by/company/group_by/company', middleware.group_sort_by);
 router.get('/search_by/company/group_by/company', function(req, res, next) {
     winston.info(req.originalUrl, {query: req.query, ip: req.ip, ips: req.ips});
+
+    if (req.user === undefined) {
+        next(new HttpError("Unauthorized", 401));
+        return;
+    } else if (req.custom.search_permission !== true) {
+        next(new HttpError("Forbidden", 403));
+        return;
+    }
 
     // input parameter
     const company = req.query.company;
