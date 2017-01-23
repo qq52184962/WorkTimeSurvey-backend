@@ -1,17 +1,14 @@
-var request = require('request');
+const request = require('request');
 
-function access_token_auth_middleware(req, res, next) {
-    var access_token = req.body.access_token;
-
-    access_token_auth(access_token).then(function(facebook) {
-        req.facebook = facebook;
-        next();
-    }).catch(function(err) {
-        next(err);
-    });
-}
-
-function access_token_auth(access_token) {
+/*
+ * 根據 access_token 取得 FB 身份
+ *
+ * @param access_token any
+ *
+ * @fulfilled  {id, name}
+ * @rejected   Error (reason)
+ */
+function accessTokenAuth(access_token) {
     return new Promise(function(resolve, reject) {
         if (! access_token) {
             throw new Error("access_token is required");
@@ -31,12 +28,14 @@ function access_token_auth(access_token) {
         }, function(error, response, body) {
             if (error) {
                 reject(new Error("access_token is invalid"));
+                return;
             }
 
-            var content = JSON.parse(body);
+            const content = JSON.parse(body);
 
             if (content.error) {
                 reject(new Error("access_token is invalid"));
+                return;
             }
 
             resolve({id: content.id, name: content.name});
@@ -45,6 +44,5 @@ function access_token_auth(access_token) {
 }
 
 module.exports = {
-    access_token_auth: access_token_auth,
-    access_token_auth_middleware: access_token_auth_middleware,
+    accessTokenAuth,
 };

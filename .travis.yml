@@ -5,6 +5,7 @@ node_js:
 
 services:
     - mongodb
+    - redis-server
 
 addons:
     apt:
@@ -18,6 +19,7 @@ addons:
 env:
     global:
         - MONGODB_URI=mongodb://localhost/goodjob
+        - REDIS_URL=redis://localhost
         - NODE_ENV=test
 
 install:
@@ -26,3 +28,4 @@ install:
 
 script:
     - npm test -- --timeout 30s
+    - npm run lint
