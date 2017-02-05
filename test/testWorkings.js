@@ -239,21 +239,61 @@ describe('Workings 工時資訊', function() {
                     // sort_field default is field 'created_at'
                     const sort_field = 'created_at';
                     const workings = res.body.time_and_salary;
-                    let undefined_start_idx = workings.length;
 
-                    for (let idx in workings) {
-                        if (workings[idx][sort_field] === undefined) {
-                            undefined_start_idx = idx;
-                            break;
-                        }
-                    }
-
-                    for (let idx=1; idx<undefined_start_idx; ++idx) {
+                    for (let idx=1; idx<workings.length; ++idx) {
                         assert(workings[idx][sort_field] >= workings[idx-1][sort_field]);
                     }
-                    for (let idx=undefined_start_idx; idx<workings.length; ++idx) {
+                })
+                .end(done);
+        });
+
+        it(`sort_by ascending order with SORT_FIELD 'week_work_time'`, function(done) {
+            sandbox.stub(authenticationLib, 'cachedFacebookAuthentication')
+                .resolves({id: '-1', name: 'LittleWhiteYA'});
+            sandbox.stub(authorizationLib, 'cachedSearchPermissionAuthorization').resolves();
+
+            request(app).get('/workings')
+                .query({
+                    sort_by: 'week_work_time',
+                    order: 'ascending',
+                    access_token: 'faketoken',
+                })
+                .expect(200)
+                .expect(function(res) {
+                    const sort_field = 'week_work_time';
+                    const workings = res.body.time_and_salary;
+
+                    let undefined_idx = 3;
+                    for (let idx=1; idx<undefined_idx; ++idx) {
+                        assert(workings[idx][sort_field] >= workings[idx-1][sort_field]);
+                    }
+                    for (let idx=undefined_idx; idx<workings.length; ++idx) {
                         assert.isUndefined(workings[idx][sort_field]);
                     }
+                })
+                .end(done);
+        });
+
+        it(`欄位是 undefined 的資料全部會被放在 defined 的資料的後面`, function(done) {
+            sandbox.stub(authenticationLib, 'cachedFacebookAuthentication')
+                .resolves({id: '-1', name: 'LittleWhiteYA'});
+            sandbox.stub(authorizationLib, 'cachedSearchPermissionAuthorization').resolves();
+
+            request(app).get('/workings')
+                .query({
+                    sort_by: 'week_work_time',
+                    order: 'ascending',
+                    access_token: 'faketoken',
+                    limit: '2',
+                    page: '1',
+                })
+                .expect(200)
+                .expect(function(res) {
+                    const sort_field = 'week_work_time';
+                    const workings = res.body.time_and_salary;
+
+                    assert.isDefined(workings[0][sort_field]);
+                    assert.isUndefined(workings[1][sort_field]);
                 })
                 .end(done);
         });
