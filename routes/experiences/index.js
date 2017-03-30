@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const HttpError = require('../libs/errors').HttpError;
+const HttpError = require('../../libs/errors').HttpError;
 const lodash = require('lodash');
 const winston = require('winston');
+/* an example to import service
+const ExperienceService = require('../../services/experience_service');
+*/
 
 // 查詢面試及工作經驗 API
 router.get('/', function(req, res, next) {
@@ -82,9 +85,11 @@ router.get('/', function(req, res, next) {
     });
 });
 
-// CHANGE ME: Get experience api
-router.get(':id', function(req, res, next) {
-    //
+router.get('/:id', function(req, res, next) {
+    res.send('Yo! you are in GET /experiences/:id');
 });
+
+router.use('/', require('./replies'));
+router.use('/', require('./likes'));
 
 module.exports = router;
