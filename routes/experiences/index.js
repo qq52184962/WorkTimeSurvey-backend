@@ -1,11 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const HttpError = require('../../libs/errors').HttpError;
+const ObjectNotExistError = require('../../libs/errors').ObjectNotExistError;
 const lodash = require('lodash');
 const winston = require('winston');
-/* an example to import service
 const ExperienceService = require('../../services/experience_service');
-*/
 
 // 查詢面試及工作經驗 API
 router.get('/', function(req, res, next) {
@@ -41,7 +40,7 @@ router.get('/', function(req, res, next) {
     req.sort_by[sort_by] = -1;
     next();
 });
-router.get('/', function (req, res, next) {
+router.get('/', function(req, res, next) {
     const page = parseInt(req.query.page) || 0;
 
     req.pagination = {
@@ -86,9 +85,25 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/:id', function(req, res, next) {
-    res.send('Yo! you are in GET /experiences/:id');
-});
+    const id = req.params.id;
+    winston.info('experiences/id', {
+        id: id,
+        ip: req.ip,
+        ips: req.ips,
+    });
 
+    const experience_service = new ExperienceService(req.db);
+    experience_service.getExperienceById(id).then((result) => {
+        res.send(result);
+    }).catch((err) => {
+        if (err instanceof ObjectNotExistError) {
+            next(new HttpError(err.message, 404));
+        } else {
+            next(new HttpError("Internal Service Error", 500));
+        }
+    });
+
+});
 router.use('/', require('./replies'));
 router.use('/', require('./likes'));
 

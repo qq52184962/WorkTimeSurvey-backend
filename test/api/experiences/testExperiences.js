@@ -2,7 +2,7 @@ const chai = require('chai');
 chai.use(require('chai-datetime'));
 const assert = chai.assert;
 const request = require('supertest');
-const app = require('../app');
+const app = require('../../../app');
 const MongoClient = require('mongodb').MongoClient;
 
 describe('Experiences 面試和工作經驗資訊', function() {
@@ -13,7 +13,60 @@ describe('Experiences 面試和工作經驗資訊', function() {
             db = _db;
         });
     });
+    describe('GET /experiences/:id', function() {
 
+        let testId = undefined;
+
+        before('Creating experiences', function() {
+            return db.collection('experiences').insertOne({
+                type: "interview",
+                created_at: new Date("2017-03-20T10:00:00.929Z"),
+                author: {
+                    type: "facebook",
+                    _id: "123",
+                },
+                company: {
+                    id: "abcde01",
+                    name: "GoodJob",
+                },
+                area: "台北",
+                job_title: "Junior backend engineer",
+                interview_time_year: "2017",
+                interview_time_month: "3",
+                title: "XXX面試洗臉記",
+                sections: [{
+                    subtitle: "人資的問話",
+                    content: "人資妹子好啊",
+                }, {
+                    subtitle: "被洗臉了",
+                    content: "被洗到好慘",
+                }],
+                education: "碩士",
+                status: "draft",
+                like_count: 1,
+                reply_count: 1,
+                share_count: 1,
+            }).then(function(result) {
+                testId = result.ops[0]._id;
+            });
+        });
+
+        it(' Expected get one data', function() {
+            return request(app).get("/experiences/" + testId)
+                .expect(200)
+                .expect(function(res) {
+                    assert.equal(res.body._id, testId);
+                    assert.notDeepProperty(res.body, 'author');
+                });
+        });
+        it('Set error uri and expected to get error', function() {
+            return request(app).get("/experiences/123XXX")
+                .expect(404);
+        });
+        after(function() {
+            return db.collection('experiences').remove({});
+        });
+    });
     describe('GET /experiences', function() {
 
         before('Seeding some experiences', function() {
@@ -198,4 +251,3 @@ describe('Experiences 面試和工作經驗資訊', function() {
         });
     });
 });
-
