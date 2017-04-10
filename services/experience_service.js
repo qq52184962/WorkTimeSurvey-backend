@@ -8,6 +8,62 @@ class ExperienceService {
     }
 
     /**
+     * 使用 query 來尋找文章
+     * @param {object}  -
+     *  query : mongodb find query,
+     *  sort : "created_at",
+     *  page : 0,
+     *  limit : 20
+     *
+     * @returns {Promise}
+     *  - resolved :
+     *  [
+     *          {
+     *              _id : ObjectId,
+     *              type : interview/work,
+     *              created_at : new Date(),
+     *              company : {
+     *                  id : 12345678,
+     *                  name : "GoodJob"
+     *              },
+     *              sections : [
+     *                  { subtitle : "abc",content:"hello" }
+     *              ]
+     *              job_title : "Backend Developer",
+     *              title : "hello world",
+     *              preview : "XXXXXXX"
+     *              like_count : 0,
+     *              reply_count : 0,
+     *          }
+     *  ]
+     *  - reject :  Default Error;
+     */
+    getExperiences(query, sort, skip = 0, limit = 25) {
+        const opt = {
+            author: 0,
+            education: 0,
+        };
+
+        return this.collection.find(query, opt).sort(sort).skip(skip).limit(limit).toArray()
+            .then((docs) => {
+                return docs;
+            }).catch((err) => {
+                throw err;
+            });
+    }
+    /**
+     *  取得搜尋的文章總數
+     * @param {object} query - mognodb find query
+     * @returns {Promise}
+     *  - resolved : 10 (Number)
+     */
+    getExperiencesCountByQuery(query) {
+        return this.collection.find(query, {
+            "_id": 1,
+        }).count();
+    }
+
+    /**
      * 使用experience Id 來取得單篇文章
      * @param {string} id - erperiences's id
      * @returns {Promise}
