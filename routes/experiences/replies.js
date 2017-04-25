@@ -28,7 +28,17 @@ router.post('/:id/replies', [
             data: req.body,
         });
 
-        reply_model.createReply(experience_id, user, content).then((result) => {
+        const partial_reply = {
+            user,
+            content,
+        };
+
+        reply_model.createReply(experience_id, partial_reply).then((reply) => {
+            // 事實上 reply === partial_reply
+            const result = {
+                reply,
+            };
+
             res.send(result);
         }).catch((err) => {
             if (err instanceof ObjectNotExistError) {

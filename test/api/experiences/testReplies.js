@@ -1,7 +1,7 @@
 const assert = require('chai').assert;
 const request = require('supertest');
 const app = require('../../../app');
-const MongoClient = require('mongodb').MongoClient;
+const { MongoClient, ObjectId } = require('mongodb');
 const sinon = require('sinon');
 require('sinon-as-promised');
 const config = require('config');
@@ -11,14 +11,14 @@ const authentication = require('../../../libs/authentication');
 describe('Replies Test', function() {
 
     let db = undefined;
+
     before(function() {
         return MongoClient.connect(config.get('MONGODB_URI')).then(function(_db) {
             db = _db;
         });
     });
 
-
-    describe('Post : /experiences/:id/replies', function() {
+    describe('Post /experiences/:id/replies', function() {
         let experience_id = undefined;
         let sandbox;
 
@@ -31,15 +31,16 @@ describe('Replies Test', function() {
                     id: '-1',
                     name: 'markLin',
                 });
-            return db.collection('experiences').insert({
+
+            return db.collection('experiences').insertOne({
                 type: 'interview',
                 author: {
                     type: "facebook",
                     _id: "123",
                 },
-                status: "published",
+                reply_count: 0,
             }).then(function(result) {
-                experience_id = result.ops[0]._id.toString();
+                experience_id = result.insertedId.toString();
             });
         });
 
@@ -53,10 +54,29 @@ describe('Replies Test', function() {
                 .expect(200)
                 .expect(function(res) {
                     assert.property(res.body, 'reply');
-                    assert.deepProperty(res.body, 'reply.id');
-                    assert.deepProperty(res.body, 'reply.content');
-                    assert.deepProperty(res.body, 'reply.like_count');
-                    assert.deepProperty(res.body, 'reply.floor');
+                    assert.deepProperty(res.body, 'reply._id');
+                    assert.deepPropertyVal(res.body, 'reply.content', '你好我是大留言');
+                    assert.deepPropertyVal(res.body, 'reply.floor', 0);
+                    assert.deepPropertyVal(res.body, 'reply.experience_id', experience_id);
+                    assert.deepPropertyVal(res.body, 'reply.like_count', 0);
+                    assert.deepEqual(res.body.reply.user, {id: '-1', type: 'facebook'});
+
+                    return ObjectId(res.body.reply._id);
+                })
+                .expect(() => {
+                    // experience part
+                    return db.collection('experiences').findOne({_id: ObjectId(experience_id)})
+                        .then(experience => {
+                            assert.equal(experience.reply_count, 1);
+                        });
+                })
+                .expect(res => {
+                    // reply part
+                    return db.collection('replies').findOne({_id: res.body.reply._id})
+                        .then(reply => {
+                            assert.deepEqual(reply.experience_id, ObjectId(experience_id));
+                            assert.deepEqual(reply.user, {id: '-1', type: 'facebook'});
+                        });
                 });
         });
 
