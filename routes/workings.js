@@ -7,7 +7,6 @@ const lodash = require('lodash');
 const post_helper = require('./workings_post');
 const middleware = require('./middleware');
 
-router.get('/', middleware.checkSearchPermission);
 router.get('/', middleware.sort_by);
 router.get('/', middleware.pagination);
 router.get('/', function(req, res, next) {
@@ -31,17 +30,6 @@ router.get('/', function(req, res, next) {
     };
     let page = req.pagination.page;
     let limit = req.pagination.limit;
-
-    if (req.custom.search_permission !== true) {
-        // the user can only view latest 10 data
-        page = 0;
-        limit = 10;
-        query = {
-            created_at: {$exists: true},
-        };
-        req.custom.sort_by = "created_at";
-        req.custom.sort = {created_at: -1};
-    }
 
     const data = {};
     collection.count().then(function(count) {
@@ -104,18 +92,9 @@ router.post('/', (req, res, next) => {
     post_helper.validation(req, res).then(next, next);
 }, post_helper.main);
 
-router.get('/search_by/company/group_by/company', middleware.checkSearchPermission);
 router.use('/search_by/company/group_by/company', middleware.group_sort_by);
 router.get('/search_by/company/group_by/company', function(req, res, next) {
     winston.info(req.originalUrl, {query: req.query, ip: req.ip, ips: req.ips});
-
-    if (req.user === undefined) {
-        next(new HttpError("Unauthorized", 401));
-        return;
-    } else if (req.custom.search_permission !== true) {
-        next(new HttpError("Forbidden", 403));
-        return;
-    }
 
     // input parameter
     const company = req.query.company;
@@ -253,18 +232,9 @@ router.get('/search_by/company/group_by/company', function(req, res, next) {
     });
 });
 
-router.get('/search_by/job_title/group_by/company', middleware.checkSearchPermission);
 router.use('/search_by/job_title/group_by/company', middleware.group_sort_by);
 router.get('/search_by/job_title/group_by/company', function(req, res, next) {
     winston.info(req.originalUrl, {query: req.query, ip: req.ip, ips: req.ips});
-
-    if (req.user === undefined) {
-        next(new HttpError('Unauthorized', 401));
-        return;
-    } else if (req.custom.search_permission !== true) {
-        next(new HttpError("Forbidden", 403));
-        return;
-    }
 
     // input parameter
     const job_title = req.query.job_title;
