@@ -73,6 +73,38 @@ class ExperienceLikeModel {
             }
         });
     }
+
+    /**
+     * Get Likes by experience_id
+     *
+     * @param {string} experience_id
+     * @param {id, type} user
+     * @returns {Promise} -
+     *  resolve: {
+     *    _id: ObjectId,
+     *    created_at: new Date(),
+     *    user: {
+     *      _id: '-1',
+     *      type: 'facebook',
+     *    },
+     *    experience_id: ObjectId,
+     *  }
+     */
+    getLikeByExperienceIdAndUser(experience_id, user) {
+        const experience_model = new ExperienceModel(this._db);
+        return experience_model.isExist(experience_id).then((is_exist) => {
+            if (!is_exist) {
+                throw new ObjectNotExistError("該篇文章不存在");
+            }
+
+            return this.collection.findOne({
+                experience_id: new ObjectId(experience_id),
+                user: user,
+            });
+        }).then((likes) => {
+            return likes;
+        });
+    }
 }
 
 module.exports = ExperienceLikeModel;
