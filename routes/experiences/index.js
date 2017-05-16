@@ -60,24 +60,60 @@ router.get('/', function(req, res, next) {
         [db_sort_field]: -1,
     };
 
-    let result = {};
+    let total;
     const experience_model = new ExperienceModel(req.db);
     experience_model.getExperiencesCountByQuery(query).then((count) => {
-        result.total = count;
+        total = count;
         return experience_model.getExperiences(query, sort, start, limit);
-    }).then((docs) => {
-        result.experiences = docs;
-        result.experiences.map(_modelMapToViewModel);
-        res.send(result);
+    }).then((experiences) => {
+        res.send(_generateGetExperiencesViewModel(experiences, total));
     }).catch((err) => {
         next(new HttpError("Internal Service Error", 500));
     });
 });
 
-function _modelMapToViewModel(experience) {
-    const sections = experience.sections;
-    experience.preview = sections[0].content;
-    delete experience.sections;
+function _generateGetExperiencesViewModel(experiences, total) {
+    const MAX_PREVIEW_SIZE = 160;
+
+    const view_experiences = experiences.map(experience => {
+        let experience_view_model = {
+            _id: experience._id,
+            type: experience.type,
+            created_at: experience.created_at,
+            company: experience.company,
+            job_title: experience.job_title,
+            title: experience.title,
+            preview: (() => {
+                if (experience.sections[0]) {
+                    return experience.sections[0].content.substring(0, MAX_PREVIEW_SIZE);
+                } else {
+                    return null;
+                }
+            })(),
+            like_count: experience.like_count,
+            reply_count: experience.reply_count,
+        };
+        if (experience.type === 'interview') {
+            experience_view_model = Object.assign(experience_view_model, {
+                region: experience.region,
+                salary: experience.salary,
+            });
+        } else if (experience.type === 'work') {
+            experience_view_model = Object.assign(experience_view_model, {
+                region: experience.region,
+                salary: experience.salary,
+                week_work_time: experience.week_work_time,
+            });
+        }
+        return experience_view_model;
+    });
+
+    const result = {
+        total,
+        experiences: view_experiences,
+    };
+
+    return result;
 }
 
 
