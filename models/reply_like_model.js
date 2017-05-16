@@ -47,6 +47,27 @@ class ReplyLikeModel {
     }
 
     /**
+     * Get replies likes
+     * @param {array} ids - replies ids
+     * @returns {Promise}
+     *  - resolve : [{
+     *     _id: ObjectId,
+     *     created_at: new Date,
+     *     user: user model,
+     *     reply_time: new Date,
+     *     reply_id: ObjectId,
+     *     experience_id: ObjectId,
+     *  }
+     */
+    getReplyLikesByRepliesIds(ids) {
+        return this.collection.find({
+            reply_id: {
+                $in: ids,
+            },
+        }).toArray();
+    }
+
+    /**
      * 刪除一個留言的讚
      * @param {string} reply_id - id of target reply
      * @param {object} user - user's object { "id":1111,"type":"facebook" }

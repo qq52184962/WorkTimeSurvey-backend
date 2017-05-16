@@ -141,52 +141,111 @@ describe('Replies Test', function() {
     });
 
     describe('Get : /experiences/:id/replies', function() {
-        let experience_id = undefined;
+        let experience_id;
+        let experience_id_string;
+        let sandbox = null;
         const test_Replies_Count = 200;
 
-        before('Create test data', function() {
-            return db.collection('experiences').insert({
+        before('create user', function() {
+            sandbox = sinon.sandbox.create();
+            sandbox.stub(authentication, 'cachedFacebookAuthentication')
+                .withArgs(sinon.match.object, sinon.match.object, 'fakeaccesstoken')
+                .resolves(fake_user);
+        });
+
+        before('create test data', function() {
+            return db.collection('experiences').insertOne({
                 type: 'interview',
                 author: {
-                    type: "facebook",
-                    _id: "123",
+                    id: fake_user.facebook_id,
+                    type: 'facebook',
                 },
                 status: "published",
             }).then(function(result) {
-                experience_id = result.ops[0]._id;
+                experience_id = result.insertedId;
+                experience_id_string = result.insertedId.toString();
                 let testDatas = [];
                 for (var i = 0; i < test_Replies_Count; i++) {
                     testDatas.push({
-                        create_at: new Date(),
+                        created_at: new Date(),
                         experience_id: experience_id,
                         author: {
-                            id: "man" + i,
+                            id: fake_user.facebook_id,
+                            type: 'facebook',
                         },
                         content: "hello test0",
+                        like_count: 0,
+                        report_count: 0,
+                        floor: i+1,
                     });
                 }
                 return db.collection('replies').insertMany(testDatas);
+            }).then(function(result) {
+                let reply1 = result.ops[0];
+                let reply2 = result.ops[1];
+                let testLikes = [{
+                    user: reply1.author,
+                    reply_id: reply1._id,
+                    experience_id: reply1.experience_id,
+                }, {
+                    user: reply2.author,
+                    reply_id: reply2._id,
+                    experience_id: reply2.experience_id,
+                }];
+                return db.collection('reply_likes').insertMany(testLikes);
             });
         });
 
-        it('Get experiences replies data and expect 200 replies ', function() {
+        it('get experiences replies data and expect 200 replies ', function() {
             return request(app)
-                .get('/experiences/' + experience_id + '/replies')
+                .get(`/experiences/${experience_id_string}/replies`)
+                .query({
+                    limit: 200,
+                })
+                .send({
+                    access_token: 'fakeaccesstoken',
+                })
                 .expect(200)
                 .expect(function(res) {
                     assert.property(res.body, 'replies');
-                    assert.notDeepProperty(res.body, 'author');
+                    assert.notDeepProperty(res.body, 'replies.0.author');
                     assert.isArray(res.body.replies);
                     assert.lengthOf(res.body.replies, test_Replies_Count);
                 });
         });
 
-        it('Get experiences replies data by start 0 and limit 10 , expect 10 replies ', function() {
+        it('get experiences reply, and expected liked is true ', function() {
             return request(app)
-                .get('/experiences/' + experience_id + '/replies')
+                .get(`/experiences/${experience_id_string}/replies`)
+                .query({
+                    limit: 200,
+                    start: 0,
+                })
+                .send({
+                    access_token: 'fakeaccesstoken',
+                })
+                .expect(200)
+                .expect(function(res) {
+                    assert.property(res.body, 'replies');
+                    assert.notDeepProperty(res.body, 'author');
+                    assert.isArray(res.body.replies);
+                    const replies = res.body.replies;
+                    const target_reply = replies.find((reply) => {
+                        return reply.liked == true;
+                    });
+                    assert.isTrue(target_reply.liked);
+                });
+        });
+
+        it('get experiences replies data by start 0 and limit 100 , expect 100 replies ', function() {
+            return request(app)
+                .get(`/experiences/${experience_id_string}/replies`)
                 .query({
                     limit: 100,
                     start: 0,
+                })
+                .send({
+                    access_token: 'fakeaccesstoken',
                 })
                 .expect(200)
                 .expect(function(res) {
@@ -197,16 +256,61 @@ describe('Replies Test', function() {
                 });
         });
 
-        it('Set error replies and expect error code 404', function() {
+        it('set error replies and expect error code 404', function() {
             return request(app)
                 .get('/experiences/1111/replies')
+                .send({
+                    access_token: 'fakeaccesstoken',
+                })
                 .expect(404);
         });
+
+        it('limit = 2000  and expect error code 402', function() {
+            return request(app)
+                .get(`/experiences/${experience_id_string}/replies`)
+                .send({
+                    access_token: 'fakeaccesstoken',
+                })
+                .query({
+                    limit: 2000,
+                })
+                .expect(422);
+        });
+
+        it('get one experiences replies , and validate return field', function() {
+            return request(app)
+                .get(`/experiences/${experience_id_string}/replies`)
+                .query({
+                    limit: 1,
+                    start: 0,
+                })
+                .send({
+                    access_token: 'fakeaccesstoken',
+                })
+                .expect(200)
+                .expect(function(res) {
+                    assert.property(res.body, 'replies');
+                    assert.notDeepProperty(res.body.replies[0], 'author');
+
+                    assert.deepProperty(res.body.replies[0], '_id');
+                    assert.deepProperty(res.body.replies[0], 'content');
+                    assert.deepProperty(res.body.replies[0], 'like_count');
+                    assert.deepProperty(res.body.replies[0], 'liked');
+                    assert.deepProperty(res.body.replies[0], 'created_at');
+                    assert.deepProperty(res.body.replies[0], 'floor');
+
+                });
+        });
+
         after(function() {
             let pro1 = db.collection('replies').remove({});
             let pro2 = db.collection('experiences').remove({});
-            return Promise.all([pro1, pro2]);
+            let pro3 = db.collection('reply_likes').remove({});
+            return Promise.all([pro1, pro2, pro3]);
         });
 
+        after(function() {
+            sandbox.restore();
+        });
     });
 });
