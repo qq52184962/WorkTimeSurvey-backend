@@ -52,10 +52,7 @@ describe('Replies Test', function() {
         beforeEach('Seed experiences collection', function() {
             const experience = {
                 type: 'interview',
-                author: {
-                    type: "facebook",
-                    _id: "123",
-                },
+                author_id: new ObjectId(),
                 reply_count: 0,
             };
             return db.collection('experiences').insertOne(experience)
@@ -79,7 +76,7 @@ describe('Replies Test', function() {
                     assert.deepPropertyVal(res.body, 'reply.floor', 0);
                     assert.deepPropertyVal(res.body, 'reply.experience_id', experience_id_string);
                     assert.deepPropertyVal(res.body, 'reply.like_count', 0);
-                    assert.deepEqual(res.body.reply.author, {id: '-1', type: 'facebook'});
+                    assert.deepEqual(res.body.reply.author_id, fake_user._id.toString());
                     assert.deepProperty(res.body, 'reply.created_at');
                 });
 
@@ -99,7 +96,7 @@ describe('Replies Test', function() {
                             assert.deepEqual(reply.experience_id, ObjectId(experience_id_string));
                             assert.deepPropertyVal(res.body, 'reply.like_count', 0);
                             assert.property(reply, 'created_at');
-                            assert.deepEqual(reply.author, {id: '-1', type: 'facebook'});
+                            assert.deepEqual(reply.author_id, fake_user._id);
                         }));
 
             return Promise.all([
@@ -168,10 +165,7 @@ describe('Replies Test', function() {
         before('create test data', function() {
             return db.collection('experiences').insertOne({
                 type: 'interview',
-                author: {
-                    id: fake_user.facebook_id,
-                    type: 'facebook',
-                },
+                author_id: fake_user._id,
             }).then(function(result) {
                 experience_id = result.insertedId;
                 experience_id_string = result.insertedId.toString();
@@ -181,10 +175,7 @@ describe('Replies Test', function() {
                     testDatas.push({
                         created_at: new Date(),
                         experience_id: experience_id,
-                        author: {
-                            id: fake_user.facebook_id,
-                            type: 'facebook',
-                        },
+                        author_id: fake_user._id,
                         content: "hello test0",
                         like_count: 0,
                         report_count: 0,
@@ -197,18 +188,15 @@ describe('Replies Test', function() {
                 const reply2 = result.ops[1];
                 const reply3 = result.ops[2];
                 const testLikes = [{
-                    user: reply1.author,
+                    user_id: reply1.author_id,
                     reply_id: reply1._id,
                     experience_id: reply1.experience_id,
                 }, {
-                    user: reply2.author,
+                    user_id: reply2.author_id,
                     reply_id: reply2._id,
                     experience_id: reply2.experience_id,
                 }, {
-                    user: {
-                        id: fake_other_user.facebook_id,
-                        type: 'facebook',
-                    },
+                    user_id: fake_other_user._id,
                     reply_id: reply3._id,
                     experience_id: reply3.experience_id,
                 }];
@@ -223,7 +211,7 @@ describe('Replies Test', function() {
                 .expect(function(res) {
                     assert.property(res.body, 'replies');
                     assert.isArray(res.body.replies);
-                    assert.notDeepProperty(res.body, 'replies.0.author');
+                    assert.notDeepProperty(res.body, 'replies.0.author_id');
                     assert.deepProperty(res.body, 'replies.0._id');
                     assert.deepProperty(res.body, 'replies.0.content');
                     assert.deepProperty(res.body, 'replies.0.like_count');
@@ -242,7 +230,7 @@ describe('Replies Test', function() {
                 .expect(200)
                 .expect(function(res) {
                     assert.property(res.body, 'replies');
-                    assert.notDeepProperty(res.body, 'replies.0.author');
+                    assert.notDeepProperty(res.body, 'replies.0.author_id');
                     assert.isArray(res.body.replies);
                     assert.lengthOf(res.body.replies, TEST_REPLIES_COUNT);
                 });
@@ -305,7 +293,7 @@ describe('Replies Test', function() {
                 .expect(200)
                 .expect(function(res) {
                     assert.property(res.body, 'replies');
-                    assert.notDeepProperty(res.body, 'author');
+                    assert.notDeepProperty(res.body, 'author_id');
                     assert.isArray(res.body.replies);
                     assert.lengthOf(res.body.replies, 100);
                 });
@@ -341,7 +329,7 @@ describe('Replies Test', function() {
                 .expect(200)
                 .expect(function(res) {
                     assert.property(res.body, 'replies');
-                    assert.notDeepProperty(res.body.replies[0], 'author');
+                    assert.notDeepProperty(res.body.replies[0], 'author_id');
 
                     assert.deepProperty(res.body.replies[0], '_id');
                     assert.deepProperty(res.body.replies[0], 'content');

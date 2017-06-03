@@ -59,10 +59,7 @@ describe('Experience Likes Test', function() {
 
             return db.collection('experiences').insertOne({
                 type: 'interview',
-                author: {
-                    type: "facebook",
-                    _id: "123",
-                },
+                author_id: new ObjectId(),
                 status: "published",
                 like_count: 0,
             }).then(function(result) {
@@ -181,7 +178,7 @@ describe('Experience Likes Test', function() {
             return db.collection("experience_likes").indexes().then((indexes) => {
                 const uniqueIndex = indexes[1];
                 assert.isDefined(uniqueIndex);
-                assert.equal(uniqueIndex.name, "user_1_experience_id_1");
+                assert.equal(uniqueIndex.name, "user_id_1_experience_id_1");
                 assert.equal(uniqueIndex.unique, true);
             });
         });
@@ -217,18 +214,12 @@ describe('Experience Likes Test', function() {
 
         beforeEach('create test data', function() {
             const experience_by_user = Object.assign(generateInterviewExperienceData(), {
-                author: {
-                    id: fake_user.facebook_id,
-                    type: 'facebook',
-                },
+                author_id: fake_user._id,
                 like_count: 2,
             });
 
             const experience_by_other_user = Object.assign(generateInterviewExperienceData(), {
-                author: {
-                    id: fake_other_user.facebook_id,
-                    type: 'facebook',
-                },
+                author_id: fake_other_user._id,
             });
 
             return db.collection('experiences').insertMany([
@@ -241,25 +232,15 @@ describe('Experience Likes Test', function() {
 
                 return db.collection('experience_likes').insertMany([{
                     created_at: new Date(),
-                    user: {
-                        id: fake_user.facebook_id,
-                        type: 'facebook',
-                    },
+                    user_id: fake_user._id,
                     experience_id: experience_id_by_user,
                 }, {
                     created_at: new Date(),
-                    user: {
-                        id: fake_other_user.facebook_id,
-                        type: 'facebook',
-                    },
+                    user_id: fake_other_user._id,
                     experience_id: experience_id_by_user,
-
                 }, {
                     created_at: new Date(),
-                    user: {
-                        id: fake_user.facebook_id,
-                        type: 'facebook',
-                    },
+                    user_id: fake_user._id,
                     experience_id: experience_id_by_other_user,
                 }]);
             }).then((likes) => {
@@ -279,10 +260,7 @@ describe('Experience Likes Test', function() {
                 req.then((res) => {
                     return db.collection('experience_likes').findOne({
                         experience_id: experience_id_by_user,
-                        user: {
-                            id: fake_user.facebook_id,
-                            type: 'facebook',
-                        },
+                        user_id: fake_user._id,
                     });
                 })
                 .then((result) => {
@@ -301,7 +279,7 @@ describe('Experience Likes Test', function() {
 
         it('cannot delete like, beacause the user does not login and return 404', function() {
             return db.collection('experience_likes').remove({
-                user: test_likes[0].user,
+                user_id: test_likes[0].user_id,
             }).then((result) => {
                 return request(app)
                     .delete(`/experiences/${experience_id_string_by_user}/likes`)
@@ -317,7 +295,7 @@ describe('Experience Likes Test', function() {
 
         it('cannot delete like, beacause the like does not exist and return 404', function() {
             return db.collection('experience_likes').remove({
-                user: test_likes[0].user,
+                user_id: test_likes[0].user_id,
             }).then((result) => {
                 return request(app)
                     .delete(`/experiences/${experience_id_string_by_user}/likes`)
@@ -336,7 +314,7 @@ describe('Experience Likes Test', function() {
 
         it('cannot delete like, because experience does not exist and return 404', function() {
             return db.collection('experience_likes').remove({
-                user: test_likes[0].user,
+                user_id: test_likes[0].user_id,
             }).then((result) => {
                 return request(app)
                     .delete('/experiences/123456789/likes')
@@ -365,14 +343,11 @@ describe('Experience Likes Test', function() {
                 .then(() => {
                     return db.collection('experience_likes').findOne({
                         experience_id: experience_id_by_user,
-                        user: {
-                            id: fake_other_user.facebook_id,
-                            type: 'facebook',
-                        },
+                        user_id: fake_other_user._id,
                     });
                 })
                 .then((result) => {
-                    assert.equal(result.user.id, fake_other_user.facebook_id, 'the other user of like should exist');
+                    assert.equal(result.user_id.toString(), fake_other_user._id.toString(), 'the other user of like should exist');
                 });
 
             return Promise.all([
@@ -392,14 +367,11 @@ describe('Experience Likes Test', function() {
                 .then(() => {
                     return db.collection('experience_likes').findOne({
                         experience_id: experience_id_by_other_user,
-                        user: {
-                            id: fake_user.facebook_id,
-                            type: 'facebook',
-                        },
+                        user_id: fake_user._id,
                     });
                 })
                 .then((result) => {
-                    assert.equal(result.user.id, fake_user.facebook_id, 'the other experience`s like should exist');
+                    assert.equal(result.user_id.toString(), fake_user._id.toString(), 'the other experience`s like should exist');
                 });
 
             return Promise.all([

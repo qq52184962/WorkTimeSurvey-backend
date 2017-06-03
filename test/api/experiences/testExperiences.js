@@ -68,10 +68,7 @@ describe('Experiences 面試和工作經驗資訊', function() {
         before('Seed experience_likes collection', function() {
             return db.collection('experience_likes').insertOne({
                 created_at: new Date(),
-                user: {
-                    id: fake_other_user.facebook_id,
-                    type: 'facebook',
-                },
+                user_id: fake_other_user._id,
                 experience_id: new ObjectId(test_interview_experience_id),
             });
         });
@@ -81,7 +78,7 @@ describe('Experiences 面試和工作經驗資訊', function() {
                 .expect(200)
                 .expect(function(res) {
                     assert.equal(res.body._id, test_interview_experience_id);
-                    assert.notDeepProperty(res.body, 'author');
+                    assert.notDeepProperty(res.body, 'author_id');
                     assert.notDeepProperty(res.body, 'liked');
                 });
         });
@@ -94,7 +91,7 @@ describe('Experiences 面試和工作經驗資訊', function() {
                 .expect(200)
                 .expect((res) => {
                     assert.equal(res.body._id, test_interview_experience_id);
-                    assert.notDeepProperty(res.body, 'author');
+                    assert.notDeepProperty(res.body, 'author_id');
                     assert.isTrue(res.body.liked);
                 });
         });
@@ -107,7 +104,7 @@ describe('Experiences 面試和工作經驗資訊', function() {
                 .expect(200)
                 .expect((res) => {
                     assert.equal(res.body._id, test_interview_experience_id);
-                    assert.notDeepProperty(res.body, 'author');
+                    assert.notDeepProperty(res.body, 'author_id');
                     assert.isFalse(res.body.liked);
                 });
         });
@@ -151,7 +148,7 @@ describe('Experiences 面試和工作經驗資訊', function() {
                     assert.property(experience, 'interview_sensitive_questions');
                     assert.property(experience, 'interview_qas');
 
-                    assert.notProperty(experience, 'author');
+                    assert.notProperty(experience, 'author_id');
                 });
         });
 
@@ -185,7 +182,7 @@ describe('Experiences 面試和工作經驗資訊', function() {
                     assert.property(experience, 'data_time');
                     assert.property(experience, 'recommend_to_others');
 
-                    assert.notProperty(experience, 'author');
+                    assert.notProperty(experience, 'author_id');
                 });
         });
 
@@ -384,7 +381,7 @@ describe('Experiences 面試和工作經驗資訊', function() {
                     assert.property(experience, 'like_count');
                     assert.property(experience, 'reply_count');
 
-                    assert.notProperty(experience, 'author');
+                    assert.notProperty(experience, 'author_id');
                     assert.notProperty(experience, 'overall_rating');
                     assert.notProperty(experience, 'sections');
                     assert.notProperty(experience, 'experience_in_year');
@@ -416,7 +413,7 @@ describe('Experiences 面試和工作經驗資訊', function() {
                     assert.property(experience, 'like_count');
                     assert.property(experience, 'reply_count');
 
-                    assert.notProperty(experience, 'author');
+                    assert.notProperty(experience, 'author_id');
                     assert.notProperty(experience, 'sections');
                     assert.notProperty(experience, 'experience_in_year');
                     assert.notProperty(experience, 'education');

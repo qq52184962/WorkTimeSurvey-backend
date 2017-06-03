@@ -13,11 +13,7 @@ class ExperienceLikeModel {
     /**
      * 新增讚至一篇經驗
      * @param {string} experience_id - experience's id
-     * @param {object} user -
-     * {
-     *  id : "xxxxx",
-     *  type : "facebook",
-     * }
+     * @param {User} user - associated user
      * @returns {Promise}
      *  - resolved : "xxxxx" (like's id)
      *  - reject : ObjectNotExistError / Default Error
@@ -30,7 +26,7 @@ class ExperienceLikeModel {
             }
 
             const data = {
-                user: user,
+                user_id: user._id,
                 created_at: new Date(),
                 experience_id: new ObjectId(experience_id),
             };
@@ -49,7 +45,7 @@ class ExperienceLikeModel {
     /**
      * delete like by experience_id and user
      * @param {string} experience_id - experience id
-     * @param {object} user - user object
+     * @param {User} user - user object
      * @returns {promise}
      *  - resolve : true
      *  - reject : DuplicateKeyError/Default Error
@@ -63,7 +59,7 @@ class ExperienceLikeModel {
 
             return this.collection.deleteOne({
                 experience_id: new ObjectId(experience_id),
-                user: user,
+                user_id: user._id,
             });
         }).then((result) => {
             if (result.deletedCount == 0) {
@@ -80,13 +76,11 @@ class ExperienceLikeModel {
      * @param {string} experience_id
      * @param {id, type} user
      * @returns {Promise} -
-     *  resolve: {
+     *  - resolve: Like[]
+     *  Like: {
      *    _id: ObjectId,
-     *    created_at: new Date(),
-     *    user: {
-     *      _id: '-1',
-     *      type: 'facebook',
-     *    },
+     *    created_at: Date,
+     *    user_id: ObjectId,
      *    experience_id: ObjectId,
      *  }
      */
@@ -99,7 +93,7 @@ class ExperienceLikeModel {
 
             return this.collection.findOne({
                 experience_id: new ObjectId(experience_id),
-                user: user,
+                user_id: user._id,
             });
         }).then((likes) => {
             return likes;
