@@ -29,6 +29,15 @@ describe('company Helper', function() {
                     id: '00000003',
                     name: 'GOODJOBGREAT',
                 },
+                {
+                    id: '00000004',
+                    name: ['GOODJOBMARK', '馬克的公司'],
+                },
+                {
+                    id: '00000005',
+                    name: [['GOODJOBMARK', '馬克的公司'], ['GOOBJOBMARK', 'Mark Co']],
+                },
+
             ]);
         });
 
@@ -60,6 +69,20 @@ describe('company Helper', function() {
         it('只給 company，但名稱無法決定唯一公司', function() {
             return assert.becomes(helper.getCompanyByIdOrQuery(db, undefined, 'GoodJobGreat'), {
                 name: 'GOODJOBGREAT',
+            });
+        });
+
+        it('取得公司名稱時，如果是陣列，則取出第一個字串', function() {
+            return assert.becomes(helper.getCompanyByIdOrQuery(db, '00000004'), {
+                id: '00000004',
+                name: 'GOODJOBMARK',
+            });
+        });
+
+        it('取得公司名稱時，如果是多重陣列，則取出第一個陣列的第一個字串', function() {
+            return assert.becomes(helper.getCompanyByIdOrQuery(db, '00000005'), {
+                id: '00000005',
+                name: 'GOODJOBMARK',
             });
         });
 
