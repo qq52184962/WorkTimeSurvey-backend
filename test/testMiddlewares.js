@@ -34,7 +34,7 @@ describe('Authentication Middleware', function() {
             sandbox = sinon.sandbox.create();
         });
 
-        it('get property user if success', function(done) {
+        it('get property user if success ( body token )', function(done) {
             const req = {
                 redis_client: {},
                 body: {
@@ -48,6 +48,39 @@ describe('Authentication Middleware', function() {
             };
 
             const stub = sandbox.stub(authenticationLib, 'cachedFacebookAuthentication').resolves(fake_user);
+
+            authentication.cachedFacebookAuthenticationMiddleware(req, {}, function(err) {
+                try {
+                    assert.isUndefined(err);
+                    assert.property(req, 'user');
+                    assert.deepEqual(req.user, fake_user);
+                    sinon.assert.calledOnce(stub);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
+
+        it('get property user if success ( header authorization token )', function(done) {
+            const bearer_token = "Bearer mF_9.B5f-4.1JqM";
+            const access_token = "mF_9.B5f-4.1JqM";
+            const req = {
+                headers: {
+                    authorization: bearer_token,
+                },
+                redis_client: {},
+                db: {},
+            };
+
+            const fake_user = {
+                _id: new ObjectId(),
+                facebook_id: '-1',
+            };
+
+            const stub = sandbox.stub(authenticationLib, 'cachedFacebookAuthentication')
+                .withArgs(sinon.match.object, sinon.match.object, access_token)
+                .resolves(fake_user);
 
             authentication.cachedFacebookAuthenticationMiddleware(req, {}, function(err) {
                 try {
