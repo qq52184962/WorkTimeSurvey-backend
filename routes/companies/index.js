@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const HttpError = require('../libs/errors').HttpError;
+const HttpError = require('../../libs/errors').HttpError;
 const lodash = require('lodash');
 const winston = require('winston');
+const CompanyModel = require('../../models/company_model');
+const getCompanyName = require('../company_helper').getCompanyName;
 
 /**
  * @api {get} /companies/search Search Company
@@ -17,12 +19,12 @@ router.get('/search', function(req, res, next) {
 
     const search = req.query.key || "";
     const page = req.query.page || 0;
-    var q;
+    let query;
 
     if (search == "") {
         throw new HttpError("key is required", 422);
     } else {
-        q = {
+        query = {
             $or: [
                 {name: new RegExp("^" + lodash.escapeRegExp(search.toUpperCase()))},
                 {id: search},
@@ -30,16 +32,18 @@ router.get('/search', function(req, res, next) {
         };
     }
 
-    const s = {
+    const sort_by = {
         capital: -1,
         type: -1,
         name: 1,
         id: 1,
     };
 
-    const collection = req.db.collection('companies');
+    const company_model = new CompanyModel(req.db);
+    const skip = 25 * page;
+    const limit = 25;
 
-    collection.find(q).sort(s).skip(25 * page).limit(25).toArray().then((results) => {
+    company_model.searchCompany(query, sort_by, skip, limit).then((results) => {
         res.send(_generateGetCompanyViewModel(results));
     }).catch((err) => {
         next(new HttpError("Internal Server Error", 500));
@@ -50,19 +54,11 @@ function _generateGetCompanyViewModel(companies) {
     const result = companies.map((company) => {
         return {
             id: company.id,
-            name: _getCompanyName(company.name),
+            name: getCompanyName(company.name),
             capital: company.capital,
         };
     });
     return result;
-}
-
-function _getCompanyName(db_company_name) {
-    if (Array.isArray(db_company_name)) {
-        return _getCompanyName(db_company_name[0]);
-    } else {
-        return db_company_name;
-    }
 }
 
 module.exports = router;

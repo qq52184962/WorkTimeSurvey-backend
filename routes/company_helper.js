@@ -46,6 +46,10 @@ function getCompanyByIdOrQuery(db, company_id, company_query) {
     }
 }
 
+function getCompanyName(db_company_name) {
+    return _getCompanyName(db_company_name);
+}
+
 function _getCompanyName(db_company_name) {
     if (Array.isArray(db_company_name)) {
         return _getCompanyName(db_company_name[0]);
@@ -55,5 +59,6 @@ function _getCompanyName(db_company_name) {
 }
 
 module.exports = {
-    getCompanyByIdOrQuery: getCompanyByIdOrQuery,
+    getCompanyByIdOrQuery,
+    getCompanyName,
 };

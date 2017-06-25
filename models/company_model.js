@@ -13,6 +13,13 @@ class CompanyModel {
             name: name,
         }).toArray();
     }
+    searchCompany(query, sort_by, skip, limit) {
+        return this.collection.find(query)
+            .sort(sort_by)
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+    }
 
 }
 
