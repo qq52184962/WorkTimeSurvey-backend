@@ -36,8 +36,8 @@ const {
  * @apiParam {String="0 < length <= 25"} sections.subtitle 段落標題
  * @apiParam {String="0 < length <= 5000"} sections.content 段落內容
  * @apiParam {Object[]="Array maximum size: 30"} [interview_qas] 面試題目列表
- * @apiParam {String="0 < length <= 250"} [interview_qas.question] 面試題目
- * @apiParam {String="0 < length <= 5000"} [interview_qas.answer] 面試題目的回答
+ * @apiParam {String="0 < length <= 250"} interview_qas.question 面試題目 (interview_qas有的話，必填)
+ * @apiParam {String="0 < length <= 5000"} [interview_qas.answer] 面試題目的回答 (interview_qas有的話，選填)
  * @apiParam {String[]="曾詢問家庭狀況","曾詢問婚姻狀況","生育計畫","曾要求繳交身分證","曾要求繳交保證金","曾詢問宗教信仰","或其他 0 < length <= 20 的字串"} [interview_sensitive_questions] 面試中提及的特別問題陣列(較敏感/可能違法)
  * @apiSuccess {Boolean} success 是否上傳成功
  * @apiSuccess {Object} experience 經驗分享物件
@@ -207,14 +207,16 @@ function validateInterviewInputFields(data) {
             throw new HttpError("面試題目列表要是一個陣列", 422);
         }
         data.interview_qas.forEach((qa) => {
-            if (!requiredNonEmptyString(qa.question) || !requiredNonEmptyString(qa.answer)) {
+            if (!requiredNonEmptyString(qa.question)) {
                 throw new HttpError("面試題目內容要寫喔！", 422);
             }
             if (!stringRequireLength(qa.question, 1, 250)) {
                 throw new HttpError("面試題目標題僅限 1~250 字！", 422);
             }
-            if (!stringRequireLength(qa.answer, 1, 5000)) {
-                throw new HttpError("面試題目標題僅限 1~5000 字！", 422);
+            if (requiredNonEmptyString(qa.answer)) {
+                if (!stringRequireLength(qa.answer, 1, 5000)) {
+                    throw new HttpError("面試題目標題僅限 1~5000 字！", 422);
+                }
             }
         });
         if (data.interview_qas.length > 30) {
@@ -306,7 +308,17 @@ function pickupInterviewExperience(input) {
         partial.education = education;
     }
     if (interview_qas) {
-        partial.interview_qas = interview_qas;
+        partial.interview_qas = interview_qas.map((qas) => {
+            let result = {
+                question: qas.question,
+            };
+            if (typeof qas.answer == "undefined" || qas.answer == null) {
+                return result;
+            } else {
+                result.answer = qas.answer;
+                return result;
+            }
+        });
     } else {
         partial.interview_qas = [];
     }
