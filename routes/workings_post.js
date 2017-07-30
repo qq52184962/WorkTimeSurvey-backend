@@ -2,8 +2,15 @@ const HttpError = require('../libs/errors').HttpError;
 const ObjectIdError = require('../libs/errors').ObjectIdError;
 const winston = require('winston');
 const helper = require('./workings_helper');
-const companyHelper= require('./company_helper');
+const companyHelper = require('./company_helper');
 const recommendation = require('../libs/recommendation');
+
+function checkBodyField(req, field) {
+    if (req.body[field] && (typeof req.body[field] === "string") && req.body[field] !== "") {
+        return true;
+    }
+    return false;
+}
 
 /*
  * [req.custom.facebook]
@@ -12,20 +19,22 @@ const recommendation = require('../libs/recommendation');
  * req.custom.company_query
  */
 function collectData(req, res) {
-    const author = req.custom.author = {};
-    const working = req.custom.working = {
-        author: author,
+    req.custom.author = {};
+    const author = req.custom.author;
+    req.custom.working = {
+        author,
         company: {},
         created_at: new Date(),
     };
+    const working = req.custom.working;
 
     if (checkBodyField(req, 'email')) {
         author.email = req.body.email;
     }
 
     if (req.custom.facebook) {
-        author.id = req.custom.facebook.id,
-        author.name = req.custom.facebook.name,
+        author.id = req.custom.facebook.id;
+        author.name = req.custom.facebook.name;
         author.type = "facebook";
     } else {
         author.id = "-1";
@@ -51,7 +60,7 @@ function collectData(req, res) {
         "has_compensatory_dayoff",
         // salary data
         "experience_in_year",
-    ].forEach(function(field, i) {
+    ].forEach((field, i) => {
         if (checkBodyField(req, field)) {
             working[field] = req.body[field];
         }
@@ -84,57 +93,6 @@ function collectData(req, res) {
     return Promise.resolve();
 }
 
-function checkBodyField(req, field) {
-    if (req.body[field] && (typeof req.body[field] === "string") && req.body[field] !== "") {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-function validation(req, res) {
-    const data = req.custom.working;
-    const custom = req.custom;
-
-    try {
-        validateCommonData(req);
-    } catch (err) {
-        winston.info("validating fail", {ip: req.ip, ips: req.ips});
-
-        return Promise.reject(err);
-    }
-
-    let hasWorkingTimeData = false;
-    let hasSalaryData = false;
-
-    if (data.week_work_time || data.overtime_frequency || data.day_promised_work_time ||
-        data.day_real_work_time || data.has_overtime_salary || data.is_overtime_salary_legal ||
-        data.has_compensatory_dayoff) {
-
-        hasWorkingTimeData = true;
-        try {
-            validateWorkingTimeData(req);
-        } catch (err) {
-            return Promise.reject(err);
-        }
-    }
-
-    if (custom.salary_type || custom.salary_amount || data.experience_in_year) {
-        hasSalaryData = true;
-        try {
-            validateSalaryData(req);
-        } catch (err) {
-            return Promise.reject(err);
-        }
-    }
-
-    if (!hasWorkingTimeData && !hasSalaryData) {
-        return Promise.reject(new HttpError("薪資或工時欄位擇一必填", 422));
-    }
-
-    return Promise.resolve();
-}
-
 /*
  * req.custom.working
  * [req.custom.company_query]
@@ -154,13 +112,13 @@ function validateCommonData(req) {
     const company_query = req.custom.company_query;
     const custom = req.custom;
 
-    if (! data.company.id) {
-        if (! company_query) {
+    if (!data.company.id) {
+        if (!company_query) {
             throw new HttpError("公司/單位名稱必填", 422);
         }
     }
 
-    if (! data.is_currently_employed) {
+    if (!data.is_currently_employed) {
         throw new HttpError('是否在職必填', 422);
     }
     if (["yes", "no"].indexOf(data.is_currently_employed) === -1) {
@@ -172,14 +130,14 @@ function validateCommonData(req) {
         }
     }
     if (data.is_currently_employed === 'no') {
-        if (! custom.job_ending_time_year) {
+        if (!custom.job_ending_time_year) {
             throw new HttpError('離職年份必填', 422);
         }
-        if (! custom.job_ending_time_month) {
+        if (!custom.job_ending_time_month) {
             throw new HttpError('離職月份必填', 422);
         }
-        custom.job_ending_time_year = parseInt(custom.job_ending_time_year);
-        custom.job_ending_time_month = parseInt(custom.job_ending_time_month);
+        custom.job_ending_time_year = parseInt(custom.job_ending_time_year, 10);
+        custom.job_ending_time_month = parseInt(custom.job_ending_time_month, 10);
         const now = new Date();
         if (isNaN(custom.job_ending_time_year)) {
             throw new HttpError('離職年份需為數字', 422);
@@ -191,17 +149,18 @@ function validateCommonData(req) {
         } else if (custom.job_ending_time_month < 1 || data.job_ending_time_month > 12) {
             throw new HttpError('離職月份需在1~12月', 422);
         }
-        if ((custom.job_ending_time_year == now.getFullYear() && custom.job_ending_time_month > (now.getMonth() + 1)) ||
-            custom.job_ending_time_year > now.getFullYear()) {
+        if ((custom.job_ending_time_year === now.getFullYear()
+                    && custom.job_ending_time_month > (now.getMonth() + 1))
+                || custom.job_ending_time_year > now.getFullYear()) {
             throw new HttpError('離職月份不能比現在時間晚', 422);
         }
     }
 
-    if (! data.job_title) {
+    if (!data.job_title) {
         throw new HttpError("職稱未填", 422);
     }
 
-    if (! data.employment_type) {
+    if (!data.employment_type) {
         throw new HttpError('職務型態必填', 422);
     }
     const employment_types = ["full-time", "part-time", "intern", "temporary", "contract", "dispatched-labor"];
@@ -231,7 +190,7 @@ function validateWorkingTimeData(req) {
     /*
      * Check all the required fields, or raise an 422 http error
      */
-    if (! data.week_work_time) {
+    if (!data.week_work_time) {
         throw new HttpError("最近一週實際工時未填", 422);
     }
     data.week_work_time = parseFloat(data.week_work_time);
@@ -242,15 +201,15 @@ function validateWorkingTimeData(req) {
         throw new HttpError("最近一週實際工時必須在0~168之間", 422);
     }
 
-    if (! data.overtime_frequency) {
+    if (!data.overtime_frequency) {
         throw new HttpError("加班頻率必填", 422);
     }
     if (["0", "1", "2", "3"].indexOf(data.overtime_frequency) === -1) {
         throw new HttpError("加班頻率格式錯誤", 422);
     }
-    data.overtime_frequency = parseInt(data.overtime_frequency);
+    data.overtime_frequency = parseInt(data.overtime_frequency, 10);
 
-    if (! data.day_promised_work_time) {
+    if (!data.day_promised_work_time) {
         throw new HttpError("工作日表訂工時未填", 422);
     }
     data.day_promised_work_time = parseFloat(data.day_promised_work_time);
@@ -261,7 +220,7 @@ function validateWorkingTimeData(req) {
         throw new HttpError("工作日表訂工時必須在0~24之間", 422);
     }
 
-    if (! data.day_real_work_time) {
+    if (!data.day_real_work_time) {
         throw new HttpError("工作日實際工時必填", 422);
     }
     data.day_real_work_time = parseFloat(data.day_real_work_time);
@@ -282,10 +241,8 @@ function validateWorkingTimeData(req) {
         if (data.has_overtime_salary) {
             if (data.has_overtime_salary !== "yes") {
                 throw new HttpError('加班應有加班費，本欄位才有意義', 422);
-            } else {
-                if (["yes", "no", "don't know"].indexOf(data.is_overtime_salary_legal) === -1) {
-                    throw new HttpError('加班費是否合法應為是/否/不知道', 422);
-                }
+            } else if (["yes", "no", "don't know"].indexOf(data.is_overtime_salary_legal) === -1) {
+                throw new HttpError('加班費是否合法應為是/否/不知道', 422);
             }
         } else {
             throw new HttpError('加班應有加班費，本欄位才有意義', 422);
@@ -308,17 +265,17 @@ function validateSalaryData(req) {
     const data = req.custom.working;
     const custom = req.custom;
 
-    if (! custom.salary_type) {
+    if (!custom.salary_type) {
         throw new HttpError('薪資種類必填', 422);
     }
     if (["year", "month", "day", "hour"].indexOf(custom.salary_type) === -1) {
         throw new HttpError('薪資種類需為年薪/月薪/日薪/時薪', 422);
     }
 
-    if (! custom.salary_amount) {
+    if (!custom.salary_amount) {
         throw new HttpError('薪資多寡必填', 422);
     }
-    custom.salary_amount = parseInt(custom.salary_amount);
+    custom.salary_amount = parseInt(custom.salary_amount, 10);
     if (isNaN(custom.salary_amount)) {
         throw new HttpError('薪資需為整數', 422);
     }
@@ -326,10 +283,10 @@ function validateSalaryData(req) {
         throw new HttpError('薪資不小於0', 422);
     }
 
-    if (! data.experience_in_year) {
+    if (!data.experience_in_year) {
         throw new HttpError('相關職務工作經驗必填', 422);
     }
-    data.experience_in_year = parseInt(data.experience_in_year);
+    data.experience_in_year = parseInt(data.experience_in_year, 10);
     if (isNaN(data.experience_in_year)) {
         throw new HttpError('相關職務工作經驗需為整數', 422);
     }
@@ -338,11 +295,53 @@ function validateSalaryData(req) {
     }
 }
 
+function validation(req, res) {
+    const data = req.custom.working;
+    const custom = req.custom;
+
+    try {
+        validateCommonData(req);
+    } catch (err) {
+        winston.info("validating fail", { ip: req.ip, ips: req.ips });
+
+        return Promise.reject(err);
+    }
+
+    let hasWorkingTimeData = false;
+    let hasSalaryData = false;
+
+    if (data.week_work_time || data.overtime_frequency || data.day_promised_work_time ||
+        data.day_real_work_time || data.has_overtime_salary || data.is_overtime_salary_legal ||
+        data.has_compensatory_dayoff) {
+        hasWorkingTimeData = true;
+        try {
+            validateWorkingTimeData(req);
+        } catch (err) {
+            return Promise.reject(err);
+        }
+    }
+
+    if (custom.salary_type || custom.salary_amount || data.experience_in_year) {
+        hasSalaryData = true;
+        try {
+            validateSalaryData(req);
+        } catch (err) {
+            return Promise.reject(err);
+        }
+    }
+
+    if (!hasWorkingTimeData && !hasSalaryData) {
+        return Promise.reject(new HttpError("薪資或工時欄位擇一必填", 422));
+    }
+
+    return Promise.resolve();
+}
+
 function main(req, res, next) {
     const working = req.custom.working;
     const company_query = req.custom.company_query;
     const response_data = {
-        working: working,
+        working,
     };
 
     /*
@@ -390,57 +389,61 @@ function main(req, res, next) {
      *
      * 其他情況看 issue #7
      */
-    companyHelper.getCompanyByIdOrQuery(req.db, working.company.id, company_query).then(company => {
-        working.company = company;
-    }).then(() => {
-        //這邊嘗試從recommendation_string去取得推薦使用者的資訊
-        if (req.custom.recommendation_string) {
-            return recommendation.getUserByRecommendationString(req.db, req.custom.recommendation_string).then(
-                result => {
-                    //if no error but still cannot find user
-                    if (result === null) {
-                        return null;
-                    } else {
-                        return result;
-                    }
-                },
-                err => {
-                    //if recommendation_string is not valid
-                    if (err instanceof ObjectIdError) {
-                        return null;
-                    } else {
-                        throw err;
-                    }
-                });
-        } else {
+    companyHelper
+        .getCompanyByIdOrQuery(req.db, working.company.id, company_query)
+        .then((company) => {
+            working.company = company;
+        }).then(() => {
+        // 這邊嘗試從recommendation_string去取得推薦使用者的資訊
+            if (req.custom.recommendation_string) {
+                return recommendation
+                    .getUserByRecommendationString(req.db, req.custom.recommendation_string)
+                    .then(
+                        (result) => {
+                            // if no error but still cannot find user
+                            if (result === null) {
+                                return null;
+                            }
+                            return result;
+                        },
+                        (err) => {
+                            // if recommendation_string is not valid
+                            if (err instanceof ObjectIdError) {
+                                return null;
+                            }
+                            throw err;
+                        }
+                    );
+            }
             return null;
-        }
-    }).then((rec_user) => {
-        if (rec_user !== null) {
-            working.recommended_by = rec_user;
-            return req.db.collection('recommendations').update({user: rec_user}, {$inc: {count: 1}});
-        } else {
+        }).then((rec_user) => {
+            if (rec_user !== null) {
+                working.recommended_by = rec_user;
+                return req.db.collection('recommendations').update({ user: rec_user }, { $inc: { count: 1 } });
+            }
             // 如果不是 user，依然把 recommendation_string 儲存起來
             if (req.custom.recommendation_string) {
                 working.recommended_by = req.custom.recommendation_string;
             }
-            return;
-        }
-    }).then(() => {
+        })
+    .then(() => {
         const author = working.author;
 
-        return helper.checkAndUpdateQuota(req.db, {id: author.id, type: author.type}).then(queries_count => {
-            response_data.queries_count = queries_count;
-        });
-    }).then(() => {
-        return collection.insert(working);
-    }).then(() => {
-        winston.info("workings insert data success", {id: working._id, ip: req.ip, ips: req.ips});
-        //delete some sensitive information before sending response
-        delete response_data.working.recommended_by;
-        res.send(response_data);
-    }).catch(function(err) {
-        winston.info("workings insert data fail", {id: working._id, ip: req.ip, ips: req.ips, err: err});
+        return helper
+            .checkAndUpdateQuota(req.db, { id: author.id, type: author.type })
+            .then((queries_count) => {
+                response_data.queries_count = queries_count;
+            });
+    })
+    .then(() => collection.insert(working))
+        .then(() => {
+            winston.info("workings insert data success", { id: working._id, ip: req.ip, ips: req.ips });
+        // delete some sensitive information before sending response
+            delete response_data.working.recommended_by;
+            res.send(response_data);
+        })
+    .catch((err) => {
+        winston.info("workings insert data fail", { id: working._id, ip: req.ip, ips: req.ips, err });
 
         next(err);
     });

@@ -10,26 +10,25 @@ const permission = require('./search-permission');
  * @rejected  error
  */
 function cachedSearchPermissionAuthorization(mongodb, redisdb, user) {
-    function checkPermission(mongodb, redisdb, user) {
-        return permission.resolveSearchPermission(mongodb, user).then(hasSearchPermission => {
-            if (hasSearchPermission === true) {
-                return _redis.redisSetPermission(redisdb, `${user.type}_${user.id}`).catch(err => {}).then(() => true);
-            } else {
+    function checkPermission(Mongodb, Redisdb, User) {
+        return permission
+            .resolveSearchPermission(Mongodb, User)
+            .then((hasSearchPermission) => {
+                if (hasSearchPermission === true) {
+                    return _redis
+                        .redisSetPermission(Redisdb, `${user.type}_${user.id}`)
+                        .catch((err) => {}).then(() => true);
+                }
                 return false;
-            }
-        });
-
+            });
     }
 
-    return _redis.redisGetPermission(redisdb, `${user.type}_${user.id}`).then(hasPermission => {
+    return _redis.redisGetPermission(redisdb, `${user.type}_${user.id}`).then((hasPermission) => {
         if (hasPermission === true) {
             return true;
-        } else {
-            return checkPermission(mongodb, redisdb, user);
         }
-    }, err => {
         return checkPermission(mongodb, redisdb, user);
-    });
+    }, err => checkPermission(mongodb, redisdb, user));
 }
 
 module.exports = {

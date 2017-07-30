@@ -1,10 +1,20 @@
 const express = require('express');
+
 const router = express.Router();
 const HttpError = require('../../libs/errors').HttpError;
 const escapeRegExp = require('lodash/escapeRegExp');
 const winston = require('winston');
 const CompanyModel = require('../../models/company_model');
 const getCompanyName = require('../company_helper').getCompanyName;
+
+function _generateGetCompanyViewModel(companies) {
+    const result = companies.map(company => ({
+        id: company.id,
+        name: getCompanyName(company.name),
+        capital: company.capital,
+    }));
+    return result;
+}
 
 /**
  * @api {get} /companies/search Search Company
@@ -14,24 +24,24 @@ const getCompanyName = require('../company_helper').getCompanyName;
  * @apiParam {Number} [page=0]
  * @apiSuccess {Object[]} . Companies
  */
-router.get('/search', function(req, res, next) {
-    winston.info("/workings/search", {query: req.query, ip: req.ip, ips: req.ips});
+router.get('/search', (req, res, next) => {
+    winston.info("/workings/search", { query: req.query, ip: req.ip, ips: req.ips });
 
     const search = req.query.key || "";
     const page = req.query.page || 0;
-    let query;
 
-    if (search == "") {
+    if (search === "") {
         next(new HttpError("key is required", 422));
         return;
-    } else {
-        query = {
-            $or: [
-                {name: new RegExp("^" + escapeRegExp(search.toUpperCase()))},
-                {id: search},
-            ],
-        };
     }
+
+    const query = {
+        $or: [
+                { name: new RegExp(`^${escapeRegExp(search.toUpperCase())}`) },
+                { id: search },
+        ],
+    };
+
 
     const sort_by = {
         capital: -1,
@@ -50,17 +60,6 @@ router.get('/search', function(req, res, next) {
         next(new HttpError("Internal Server Error", 500));
     });
 });
-
-function _generateGetCompanyViewModel(companies) {
-    const result = companies.map((company) => {
-        return {
-            id: company.id,
-            name: getCompanyName(company.name),
-            capital: company.capital,
-        };
-    });
-    return result;
-}
 
 module.exports = router;
 
