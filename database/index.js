@@ -1,16 +1,16 @@
-const co = require('co');
 const MongoClient = require('mongodb').MongoClient;
 const migrations = require('./migrations');
 const config = require('config');
+
 const collection_name = 'migrations';
 
 async function isMigrated(db, name) {
-    const result = await db.collection(collection_name).findOne({_id: name});
+    const result = await db.collection(collection_name).findOne({ _id: name });
     if (result) {
         return true;
-    } else {
-        return false;
     }
+
+    return false;
 }
 
 function recordMigration(db, name) {
@@ -23,6 +23,7 @@ function recordMigration(db, name) {
 async function migrate(db, name) {
     const result = await isMigrated(db, name);
     if (result === false) {
+        // eslint-disable-next-line
         const migration = require(`./migrations/${name}`);
 
         await migration(db);
@@ -34,12 +35,12 @@ async function migrate(db, name) {
     }
 }
 
-const main = async function() {
+const main = async function () {
     const db = await MongoClient.connect(config.get('MONGODB_URI'));
 
     try {
         for (const name of migrations) {
-            await migrate(db, name);
+            await migrate(db, name); // eslint-disable-line no-await-in-loop
         }
     } catch (err) {
         console.log(err);
