@@ -139,7 +139,7 @@ class ReportModel {
         created_at: 1,
     }) {
         return this._getReportsByRefId(
-            EXPERIENCES_COLLECTION, experience_id_str, skip, limit, sort,
+            EXPERIENCES_COLLECTION, experience_id_str, skip, limit, sort
         );
     }
 
