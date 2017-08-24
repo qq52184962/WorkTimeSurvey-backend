@@ -1,15 +1,29 @@
 const express = require('express');
 
 const router = express.Router();
-const HttpError = require('../libs/errors').HttpError;
+const HttpError = require('../../libs/errors').HttpError;
 const escapeRegExp = require('lodash/escapeRegExp');
 const post_helper = require('./workings_post');
-const middleware = require('./middleware');
+const middleware = require('../middleware');
 const passport = require('passport');
+const wrap = require('../../libs/wrap');
 
+/* eslint-disable */
+/**
+ * @api {get} /workings 查詢薪資與工時資料 API
+ * @apiGroup Workings
+ * @apiParam {String="created_at","week_work_time","estimated_hourly_wage"} [sorted_by="created_at"] 單筆資料排序的方式
+ * @apiParam {String="descending","ascending"} [order="descending"] 資料排序由大到小或由小到大。無資料者會被排到最下方
+ * @apiParam {String="0"} [page=0] 分頁號碼
+ * @apiParam {String="0 < limit <= 50"} [limit=25] 單頁資料筆數
+ * @apiSuccess {Number} total 總資料數
+ * @apiSuccess {Number} page 目前在資料的第幾頁
+ * @apiSuccess {Object[]} time_and_salary 薪時資料
+ */
+/* eslint-enable */
 router.get('/', middleware.sort_by);
 router.get('/', middleware.pagination);
-router.get('/', (req, res, next) => {
+router.get('/', wrap(async (req, res) => {
     const collection = req.db.collection('workings');
     const opt = {
         company: 1,
@@ -23,48 +37,40 @@ router.get('/', (req, res, next) => {
         estimated_hourly_wage: 1,
     };
 
-    let query = {
-        [req.custom.sort_by]: { $exists: true },
-    };
     const page = req.pagination.page;
     const limit = req.pagination.limit;
 
     const data = {};
-    collection
-        .count()
-        .then((count) => {
-            data.total = count;
+    data.total = await collection.count();
 
-            return collection
-                .find(query, opt)
-                .sort(req.custom.sort)
-                .skip(limit * page)
-                .limit(limit)
-                .toArray();
-        })
-        .then((defined_results) => {
-            if (defined_results.length < limit) {
-                return collection.find(query).count().then((count_defined_num) => {
-                    query = {
-                        [req.custom.sort_by]: { $exists: false },
-                    };
+    const defined_query = {
+        [req.custom.sort_by]: { $exists: true },
+    };
+    const undefined_query = {
+        [req.custom.sort_by]: { $exists: false },
+    };
 
-                    return collection.find(query, opt)
-                            .skip(((limit * page) + defined_results.length) - count_defined_num)
-                            .limit(limit - defined_results.length).toArray();
-                }).then(results => defined_results.concat(results));
-            }
-            return defined_results;
-        })
-        .then((results) => {
-            data.time_and_salary = results;
+    const defined_results = await collection
+        .find(defined_query, opt)
+        .sort(req.custom.sort)
+        .skip(limit * page)
+        .limit(limit)
+        .toArray();
 
-            res.send(data);
-        })
-        .catch((err) => {
-            next(new HttpError("Internal Server Error", 500));
-        });
-});
+    if (defined_results.length < limit) {
+        const count_defined_num = await collection.find(defined_query).count();
+
+        const undefined_results = await collection.find(undefined_query, opt)
+            .skip(((limit * page) + defined_results.length) - count_defined_num)
+            .limit(limit - defined_results.length)
+            .toArray();
+        data.time_and_salary = defined_results.concat(undefined_results);
+    } else {
+        data.time_and_salary = defined_results;
+    }
+
+    res.send(data);
+}));
 
 router.post('/', (req, res, next) => {
     req.custom = {};
