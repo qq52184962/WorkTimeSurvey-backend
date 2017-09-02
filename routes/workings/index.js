@@ -41,9 +41,11 @@ router.get('/extreme', wrap(async (req, res) => {
 
     const defined_query = {
         [req.custom.sort_by]: { $exists: true },
+        status: 'published',
     };
     const undefined_query = {
         [req.custom.sort_by]: { $exists: false },
+        status: 'published',
     };
 
     const skip = Math.floor(count * 0.01);
@@ -103,13 +105,15 @@ router.get('/', wrap(async (req, res) => {
     }
 
     const data = {};
-    data.total = await collection.count();
+    data.total = await collection.find({ status: 'published' }).count();
 
     const defined_query = {
         [req.custom.sort_by]: { $exists: true },
+        status: 'published',
     };
     const undefined_query = {
         [req.custom.sort_by]: { $exists: false },
+        status: 'published',
     };
 
 
@@ -171,6 +175,7 @@ router.get('/search_by/company/group_by/company', (req, res, next) => {
                     { 'company.name': new RegExp(escapeRegExp(company.toUpperCase())) },
                     { 'company.id': company },
                 ],
+                status: 'published',
             },
         },
         {
@@ -327,6 +332,7 @@ router.get('/search_by/job_title/group_by/company', (req, res, next) => {
         {
             $match: {
                 job_title: new RegExp(escapeRegExp(job_title.toUpperCase())),
+                status: 'published',
             },
         },
         {

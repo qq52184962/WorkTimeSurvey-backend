@@ -33,7 +33,8 @@ describe('Workings 工時資訊', () => {
                 salary: { amount: 22000, type: "month" },
                 estimated_hourly_wage: 100,
                 data_time: { year: 2016, month: 10 },
-                sector: "Taipei", //optional
+                sector: "Taipei", // optional
+                status: "published",
             },
             {
                 company: { name: "companyC" },
@@ -44,7 +45,8 @@ describe('Workings 工時資訊', () => {
                 salary: { amount: 22000, type: "month" },
                 estimated_hourly_wage: 120,
                 data_time: { year: 2016, month: 10 },
-                sector: "Taipei", //optional
+                sector: "Taipei", // optional
+                status: "published",
             },
             {
                 company: { name: "companyB" },
@@ -55,6 +57,7 @@ describe('Workings 工時資訊', () => {
                     // 有的沒有薪資資訊，當然也不會有估計時薪
                 data_time: { year: 2016, month: 10 },
                 sector: "Tainan",
+                status: "published",
             },
             {
                 company: { name: "companyB" },
@@ -64,6 +67,19 @@ describe('Workings 工時資訊', () => {
                 salary: { amount: 22000, type: "month" },
                 data_time: { year: 2016, month: 10 },
                 sector: "Tainan",
+                status: "published",
+            },
+            {
+                company: { name: "companyD" },
+                created_at: new Date("2016-11-13T06:10:04.023Z"),
+                job_title: "engineer1",
+                week_work_time: 40,
+                overtime_frequency: 1,
+                salary: { amount: 22000, type: "month" },
+                estimated_hourly_wage: 100,
+                data_time: { year: 2016, month: 10 },
+                sector: "Taipei", // optional
+                status: "hidden",
             },
         ]));
 
@@ -182,7 +198,8 @@ describe('Workings 工時資訊', () => {
                         salary: { amount: 22000, type: "month" },
                         estimated_hourly_wage: (i + 1) * 100, // 100 ~ 20000
                         data_time: { year: 2016, month: 10 },
-                        sector: "Taipei", //optional
+                        sector: "Taipei", // optional
+                        status: "published",
                     }));
                 return db.collection('workings').insertMany(workings);
             });
@@ -233,6 +250,7 @@ describe('Workings 工時資訊', () => {
                         estimated_hourly_wage: 100,
                         data_time: { year: 2016, month: 10 },
                         sector: "Taipei",
+                        status: "published",
                     },
                     {
                         company: { name: "companyA" },
@@ -244,6 +262,19 @@ describe('Workings 工時資訊', () => {
                         estimated_hourly_wage: 200,
                         data_time: { year: 2016, month: 10 },
                         sector: "Taipei",
+                        status: "published",
+                    },
+                    {
+                        company: { name: "companyA" },
+                        created_at: new Date("2016-11-13T06:10:04.023Z"),
+                        job_title: "engineer1",
+                        week_work_time: 40,
+                        overtime_frequency: 1,
+                        salary: { amount: 22000, type: "month" },
+                        estimated_hourly_wage: 200,
+                        data_time: { year: 2016, month: 10 },
+                        sector: "Taipei",
+                        status: "hidden",
                     },
                 ]);
 
@@ -255,7 +286,8 @@ describe('Workings 工時資訊', () => {
                         overtime_frequency: 1,
                         salary: { amount: 22000, type: "month" },
                         data_time: { year: 2016, month: 10 },
-                        sector: "Taipei", //optional
+                        sector: "Taipei", // optional
+                        status: "published",
                     }));
                 return db.collection('workings').insertMany(workings);
             });
@@ -328,6 +360,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER1",
@@ -356,6 +389,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER2",
@@ -371,6 +405,7 @@ describe('Workings 工時資訊', () => {
                 has_overtime_salary: "yes",
                 is_overtime_salary_legal: "don't know",
                 has_compensatory_dayoff: "no",
+                status: "published",
             },
             {
                 job_title: "ENGINEER2",
@@ -385,6 +420,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER3",
@@ -406,6 +442,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER3",
@@ -435,6 +472,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER4",
@@ -455,6 +493,28 @@ describe('Workings 工時資訊', () => {
                     amount: 22000,
                 },
                 experience_in_year: 1,
+                status: "published",
+            },
+            {
+                job_title: "ENGINEER4",
+                company: { name: "COMPANY1" },
+                is_currently_employed: 'yes',
+                employment_type: 'full-time',
+                created_at: new Date("2016-07-20T06:00:00.000Z"),
+                data_time: {
+                    year: 2016,
+                    month: 7,
+                },
+                author: {
+                },
+                    // no work time data
+                    //
+                salary: {
+                    type: 'month',
+                    amount: 22000,
+                },
+                experience_in_year: 1,
+                status: "hidden",
             },
         ]));
 
@@ -467,7 +527,7 @@ describe('Workings 工時資訊', () => {
                 .then((res) => {
                 }));
 
-        it('依照 company 來分群資料，結構正確 (workings.length >= 5)', () => request(app).get('/workings/search_by/company/group_by/company')
+        it('依照 company 來分群資料，結構正確 (workings.length = 5)', () => request(app).get('/workings/search_by/company/group_by/company')
                 .query({
                     company: 'COMPANY1',
                 })
@@ -482,7 +542,7 @@ describe('Workings 工時資訊', () => {
                     assert.deepProperty(res.body[0], 'average.estimated_hourly_wage');
                     assert.deepProperty(res.body[0], 'time_and_salary');
                     assert.isArray(res.body[0].time_and_salary);
-                    assert(res.body[0].time_and_salary.length >= 5);
+                    assert(res.body[0].time_and_salary.length = 5);
                     assert.deepProperty(res.body[0], 'time_and_salary.0.job_title');
                     // The first one don't have sector, see #183
                     // assert.deepProperty(res.body[0], 'time_and_salary.0.sector');
@@ -727,6 +787,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER1",
@@ -752,6 +813,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER2",
@@ -764,6 +826,7 @@ describe('Workings 工時資訊', () => {
                 overtime_frequency: 1,
                 day_promised_work_time: 9,
                 day_real_work_time: 10,
+                status: "published",
             },
             {
                 job_title: "ENGINEER2",
@@ -778,6 +841,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER3",
@@ -797,6 +861,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER4",
@@ -817,6 +882,28 @@ describe('Workings 工時資訊', () => {
                     amount: 22000,
                 },
                 experience_in_year: 1,
+                status: "published",
+            },
+            {
+                job_title: "ENGINEER1",
+                company: { name: "COMPANY3" },
+                is_currently_employed: 'yes',
+                employment_type: 'full-time',
+                created_at: new Date("2016-07-20T06:00:00.000Z"),
+                data_time: {
+                    year: 2016,
+                    month: 7,
+                },
+                author: {
+                },
+                    // no work time data
+                    //
+                salary: {
+                    type: 'month',
+                    amount: 22000,
+                },
+                experience_in_year: 1,
+                status: "hidden",
             },
         ]));
 
