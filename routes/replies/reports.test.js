@@ -186,8 +186,8 @@ describe('Reports Test', () => {
 
         afterEach(async () => {
             sandbox.restore();
-            await db.collection('reports').remove();
-            await db.collection('replies').remove({});
+            await db.collection('reports').deleteMany({});
+            await db.collection('replies').deleteMany({});
         });
     });
 
@@ -286,8 +286,8 @@ describe('Reports Test', () => {
                 .expect(422));
 
         after(async () => {
-            await db.collection('reports').remove({});
-            await db.collection('replies').remove({});
+            await db.collection('reports').deleteMany({});
+            await db.collection('replies').deleteMany({});
         });
 
         after(() => {
