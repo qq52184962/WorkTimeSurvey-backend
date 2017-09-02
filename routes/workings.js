@@ -5,6 +5,9 @@ const HttpError = require('../libs/errors').HttpError;
 const escapeRegExp = require('lodash/escapeRegExp');
 const post_helper = require('./workings_post');
 const middleware = require('./middleware');
+const WorkingModel = require('../models/working_model');
+const ObjectNotExistError = require('../libs/errors').ObjectNotExistError;
+const wrap = require('../libs/wrap');
 const passport = require('passport');
 
 router.get('/', middleware.sort_by);
@@ -432,5 +435,54 @@ router.get('/jobs/search', (req, res, next) => {
         next(new HttpError("Internal Server Error", 500));
     });
 });
+
+function _isValidStatus(value) {
+    const valid_status = [
+        'published',
+        'hidden',
+    ];
+    return valid_status.indexOf(value) > -1;
+}
+
+/**
+ * @api {patch} /workings/:id 更新自已建立的工時與薪資狀態 API
+ * @apiParam {String="published","hidden"} status 要更新成的狀態
+ * @apiGroup Workings
+ * @apiSuccess {Boolean} success 是否更新狀態成功
+ * @apiSuccess {String} status 更新後狀態
+ */
+router.patch('/:id', [
+    passport.authenticate('bearer', { session: false }),
+    wrap(async (req, res) => {
+        const id = req.params.id;
+        const status = req.body.status;
+        const user = req.user;
+
+        if (!_isValidStatus(status)) {
+            throw new HttpError('status is invalid', 422);
+        }
+
+        const working_model = new WorkingModel(req.db);
+        let working;
+        try {
+            working = await working_model.getWorkingsById(id, { author: 1 });
+        } catch (err) {
+            if (err instanceof ObjectNotExistError) {
+                throw new HttpError(err.message, 404);
+            }
+            throw err;
+        }
+
+        if (!(working.author.id === user.facebook_id)) {
+            throw new HttpError('user is unauthorized', 403);
+        }
+
+        const result = await working_model.updateStatus(id, status);
+        res.send({
+            success: true,
+            status: result.value.status,
+        });
+    }),
+]);
 
 module.exports = router;

@@ -4,9 +4,14 @@ chai.use(require('chai-datetime'));
 const assert = chai.assert;
 const request = require('supertest');
 const app = require('../app');
-const MongoClient = require('mongodb').MongoClient;
 const sinon = require('sinon');
 const config = require('config');
+const {
+    MongoClient,
+    ObjectId,
+} = require('mongodb');
+const authentication = require('../libs/authentication.js');
+const { generateWorkingData } = require('../routes/experiences/testData');
 
 describe('Workings 工時資訊', () => {
     let db;
@@ -957,5 +962,151 @@ describe('Workings 工時資訊', () => {
                 }));
 
         after(() => db.collection('workings').remove({}));
+    });
+    describe('PATCH /workings/:id', () => {
+        let sandbox;
+        let user_working_id;
+        let other_user_working_id;
+        const fake_user = {
+            _id: new ObjectId(),
+            facebook_id: '-1',
+            facebook: {
+                id: '-1',
+                name: 'markLin',
+            },
+        };
+
+        const fake_other_user = {
+            _id: new ObjectId(),
+            facebook_id: '-2',
+            facebook: {
+                id: '-2',
+                name: 'lin',
+            },
+        };
+
+        before('mock user', () => {
+            sandbox = sinon.sandbox.create();
+            const cachedFacebookAuthentication = sandbox.stub(authentication, 'cachedFacebookAuthentication');
+            cachedFacebookAuthentication
+                .withArgs(sinon.match.object, sinon.match.object, 'fakeaccesstoken')
+                .resolves(fake_user);
+        });
+
+        before('Seeding some workings', async () => {
+            const user_working = Object.assign(generateWorkingData(), {
+                status: 'published',
+                author: {
+                    type: 'facebook',
+                    id: fake_user.facebook_id,
+                },
+            });
+            const other_user_working = Object.assign(generateWorkingData(), {
+                status: 'published',
+                author: {
+                    type: 'facebook',
+                    id: fake_other_user.facebook_id,
+                },
+            });
+            const result = await db.collection('workings').insertMany([
+                user_working,
+                other_user_working,
+            ]);
+            user_working_id = result.insertedIds[0];
+            other_user_working_id = result.insertedIds[1];
+        });
+
+
+        it('should return 200, when user updates his working',
+            async () => {
+                const res = await request(app).patch(`/workings/${user_working_id.toString()}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'hidden',
+                    });
+
+                assert.equal(res.status, 200);
+                assert.isTrue(res.body.success);
+                assert.equal(res.body.status, "hidden");
+
+                const working = await db.collection('workings').findOne({
+                    _id: user_working_id,
+                });
+                assert.equal(working.status, "hidden");
+            }
+        );
+
+        it('should return 401, when user did not login',
+            async () => {
+                const res = await request(app).patch(`/workings/${user_working_id.toString()}`)
+                    .send({
+                        status: 'hidden',
+                    });
+
+                assert.equal(res.status, 401);
+            }
+        );
+
+        it('should return 422, when status is invalid',
+            async () => {
+                const res = await request(app).patch(`/workings/${user_working_id.toString()}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'xxxxxx',
+                    });
+
+                assert.equal(res.status, 422);
+            }
+        );
+
+        it('should return 403, when user want to update not belong to his working',
+            async () => {
+                const res = await request(app).patch(`/workings/${other_user_working_id.toString()}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'hidden',
+                    });
+                assert.equal(res.status, 403);
+            }
+        );
+
+        it('should return 422, when user did not set the status field',
+            async () => {
+                const res = await request(app).patch(`/workings/${user_working_id}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                    });
+                assert.equal(res.status, 422);
+            }
+        );
+
+        it('should return 404, when the working id is invalid',
+            async () => {
+                const res = await request(app).patch(`/workings/xxxxxxxx`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'published',
+                    });
+                assert.equal(res.status, 404);
+            }
+        );
+
+        it('should return 404, when the working is does not exist',
+            async () => {
+                const res = await request(app).patch(`/working/${(new ObjectId()).toString()}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'published',
+                    });
+                assert.equal(res.status, 404);
+            }
+        );
+
+
+        after(() => db.collection('workings').deleteMany({}));
+
+        after(() => {
+            sandbox.restore();
+        });
     });
 });
