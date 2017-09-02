@@ -192,6 +192,14 @@ class ReplyModel {
             }
         );
     }
+
+    updateStatus(_id, status) {
+        return this.collection.updateOne({
+            _id,
+        }, {
+            $set: { status },
+        });
+    }
 }
 
 module.exports = ReplyModel;
