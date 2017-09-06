@@ -124,8 +124,10 @@ describe('experiences 面試和工作經驗資訊', () => {
                                 assert.equal(experience.recommend_to_others, "yes");
                                 assert.deepEqual(experience.like_count, 0);
                                 assert.deepEqual(experience.reply_count, 0);
+                                assert.deepEqual(experience.report_count, 0);
                                 assert.property(experience, 'created_at');
                                 assert.property(experience, 'data_time');
+                                assert.deepEqual(experience.status, 'published');
 
                                 // expected response
                                 assert.property(res.body, 'success');

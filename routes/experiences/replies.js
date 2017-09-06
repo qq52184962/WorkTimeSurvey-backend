@@ -39,6 +39,7 @@ function _generateGetRepliesViewModel(replies) {
             _id: reply._id,
             content: reply.content,
             like_count: reply.like_count,
+            report_count: reply.report_count,
             liked: reply.liked,
             created_at: reply.created_at,
             floor: reply.floor,
@@ -66,6 +67,7 @@ function validationPostFields(body) {
  * @apiSuccess {String} reply._id 留言的ID
  * @apiSuccess {String} reply.content 留言的內容
  * @apiSuccess {Number} reply.like_count 留言的讚數
+ * @apiSuccess {Number} reply.like_count 留言的檢舉數
  * @apiSuccess {Number} reply.floor 該留言的樓層數 (整數, index from 0)
  * @apiSuccess {String} reply.created_at 該留言的時間
  */
@@ -115,6 +117,7 @@ router.post('/:id/replies', [
  * @apiSuccess {String} replies._id 留言的ID
  * @apiSuccess {String} replies.content 留言的內容
  * @apiSuccess {Number} replies.like_count 留言的讚數
+ * @apiSuccess {Number} replies.report_count 留言的檢舉數
  * @apiSuccess {Boolean} [replies.liked] 該留言是否已經被該名使用按讚過(使用者登入時才會回傳此欄位)
  * @apiSuccess {String} replies.created_at 該留言的時間
  * @apiSuccess {Number} replies.floor 樓層
@@ -139,7 +142,8 @@ router.get('/:id/replies', [
             const reply_model = new ReplyModel(req.db);
             const reply_like_model = new ReplyLikeModel(req.db);
 
-            const replies = await reply_model.getRepliesByExperienceId(experience_id, start, limit);
+            const replies = await reply_model
+                        .getPublishedRepliesByExperienceId(experience_id, start, limit);
             const replies_ids = replies.map(reply => reply._id);
             const likes = await reply_like_model.getReplyLikesByRepliesIds(replies_ids);
             _createLikesField(replies, likes, user);

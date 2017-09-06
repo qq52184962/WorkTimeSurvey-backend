@@ -39,6 +39,7 @@ function generateInterviewExperienceData() {
         like_count: 0,
         reply_count: 0,
         report_count: 0,
+        status: 'published',
     };
 
     return interview_experience_data;
@@ -66,6 +67,7 @@ function generateWorkExperienceData() {
         like_count: 0,
         reply_count: 0,
         report_count: 0,
+        status: 'published',
         is_currently_employed: 'no',
         job_ending_time: {
             year: 2017,
@@ -86,7 +88,59 @@ function generateWorkExperienceData() {
     return work_experience_data;
 }
 
+function generateWorkingData() {
+    return {
+        author: {
+            type: 'facebook',
+            _id: new ObjectId(),
+        },
+        created_at: new Date(),
+        company: {
+            id: '123456789',
+            name: 'goodjob',
+        },
+        job_title: 'BackEnd Devdeloper',
+        sector: '台灣區',
+        gender: 'M',
+        is_currently_employed: 'no',
+        employment_type: 'xxxx',
+        week_work_time: 40,
+        overtime_frequency: 3,
+        day_promised_work_time: 8,
+        day_real_work_time: 12,
+        has_overtime_salary: 'yes',
+        has_compensatory_dayoff: 'yes',
+        experience_in_year: 10,
+        salary: {
+            type: 'day',
+            amount: 122,
+        },
+        estimated_hourly_wage: 122,
+        data_time: {
+            year: 2016,
+            month: 1,
+        },
+        recommended_by: new ObjectId(),
+        status: 'published',
+    };
+}
+
+function generateReplyData() {
+    return {
+        created_at: new Date(),
+        experience_id: new ObjectId(),
+        author_id: new ObjectId(),
+        content: "hello test0",
+        like_count: 0,
+        report_count: 0,
+        floor: 1,
+        status: "published",
+    };
+}
+
 module.exports = {
     generateInterviewExperienceData,
     generateWorkExperienceData,
+    generateWorkingData,
+    generateReplyData,
 };

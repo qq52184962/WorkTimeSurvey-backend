@@ -4,9 +4,14 @@ chai.use(require('chai-datetime'));
 const assert = chai.assert;
 const request = require('supertest');
 const app = require('../../app');
-const MongoClient = require('mongodb').MongoClient;
 const sinon = require('sinon');
 const config = require('config');
+const {
+    MongoClient,
+    ObjectId,
+} = require('mongodb');
+const authentication = require('../../libs/authentication.js');
+const { generateWorkingData } = require('../experiences/testData');
 
 describe('Workings 工時資訊', () => {
     let db;
@@ -28,7 +33,8 @@ describe('Workings 工時資訊', () => {
                 salary: { amount: 22000, type: "month" },
                 estimated_hourly_wage: 100,
                 data_time: { year: 2016, month: 10 },
-                sector: "Taipei", //optional
+                sector: "Taipei", // optional
+                status: "published",
             },
             {
                 company: { name: "companyC" },
@@ -39,7 +45,8 @@ describe('Workings 工時資訊', () => {
                 salary: { amount: 22000, type: "month" },
                 estimated_hourly_wage: 120,
                 data_time: { year: 2016, month: 10 },
-                sector: "Taipei", //optional
+                sector: "Taipei", // optional
+                status: "published",
             },
             {
                 company: { name: "companyB" },
@@ -50,6 +57,7 @@ describe('Workings 工時資訊', () => {
                     // 有的沒有薪資資訊，當然也不會有估計時薪
                 data_time: { year: 2016, month: 10 },
                 sector: "Tainan",
+                status: "published",
             },
             {
                 company: { name: "companyB" },
@@ -59,6 +67,19 @@ describe('Workings 工時資訊', () => {
                 salary: { amount: 22000, type: "month" },
                 data_time: { year: 2016, month: 10 },
                 sector: "Tainan",
+                status: "published",
+            },
+            {
+                company: { name: "companyD" },
+                created_at: new Date("2016-11-13T06:10:04.023Z"),
+                job_title: "engineer1",
+                week_work_time: 40,
+                overtime_frequency: 1,
+                salary: { amount: 22000, type: "month" },
+                estimated_hourly_wage: 100,
+                data_time: { year: 2016, month: 10 },
+                sector: "Taipei", // optional
+                status: "hidden",
             },
         ]));
 
@@ -177,7 +198,8 @@ describe('Workings 工時資訊', () => {
                         salary: { amount: 22000, type: "month" },
                         estimated_hourly_wage: (i + 1) * 100, // 100 ~ 20000
                         data_time: { year: 2016, month: 10 },
-                        sector: "Taipei", //optional
+                        sector: "Taipei", // optional
+                        status: "published",
                     }));
                 return db.collection('workings').insertMany(workings);
             });
@@ -228,6 +250,7 @@ describe('Workings 工時資訊', () => {
                         estimated_hourly_wage: 100,
                         data_time: { year: 2016, month: 10 },
                         sector: "Taipei",
+                        status: "published",
                     },
                     {
                         company: { name: "companyA" },
@@ -239,6 +262,19 @@ describe('Workings 工時資訊', () => {
                         estimated_hourly_wage: 200,
                         data_time: { year: 2016, month: 10 },
                         sector: "Taipei",
+                        status: "published",
+                    },
+                    {
+                        company: { name: "companyA" },
+                        created_at: new Date("2016-11-13T06:10:04.023Z"),
+                        job_title: "engineer1",
+                        week_work_time: 40,
+                        overtime_frequency: 1,
+                        salary: { amount: 22000, type: "month" },
+                        estimated_hourly_wage: 200,
+                        data_time: { year: 2016, month: 10 },
+                        sector: "Taipei",
+                        status: "hidden",
                     },
                 ]);
 
@@ -250,7 +286,8 @@ describe('Workings 工時資訊', () => {
                         overtime_frequency: 1,
                         salary: { amount: 22000, type: "month" },
                         data_time: { year: 2016, month: 10 },
-                        sector: "Taipei", //optional
+                        sector: "Taipei", // optional
+                        status: "published",
                     }));
                 return db.collection('workings').insertMany(workings);
             });
@@ -323,6 +360,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER1",
@@ -351,6 +389,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER2",
@@ -366,6 +405,7 @@ describe('Workings 工時資訊', () => {
                 has_overtime_salary: "yes",
                 is_overtime_salary_legal: "don't know",
                 has_compensatory_dayoff: "no",
+                status: "published",
             },
             {
                 job_title: "ENGINEER2",
@@ -380,6 +420,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER3",
@@ -401,6 +442,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER3",
@@ -430,6 +472,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER4",
@@ -450,6 +493,28 @@ describe('Workings 工時資訊', () => {
                     amount: 22000,
                 },
                 experience_in_year: 1,
+                status: "published",
+            },
+            {
+                job_title: "ENGINEER4",
+                company: { name: "COMPANY1" },
+                is_currently_employed: 'yes',
+                employment_type: 'full-time',
+                created_at: new Date("2016-07-20T06:00:00.000Z"),
+                data_time: {
+                    year: 2016,
+                    month: 7,
+                },
+                author: {
+                },
+                    // no work time data
+                    //
+                salary: {
+                    type: 'month',
+                    amount: 22000,
+                },
+                experience_in_year: 1,
+                status: "hidden",
             },
         ]));
 
@@ -462,7 +527,7 @@ describe('Workings 工時資訊', () => {
                 .then((res) => {
                 }));
 
-        it('依照 company 來分群資料，結構正確 (workings.length >= 5)', () => request(app).get('/workings/search_by/company/group_by/company')
+        it('依照 company 來分群資料，結構正確 (workings.length = 5)', () => request(app).get('/workings/search_by/company/group_by/company')
                 .query({
                     company: 'COMPANY1',
                 })
@@ -477,7 +542,7 @@ describe('Workings 工時資訊', () => {
                     assert.deepProperty(res.body[0], 'average.estimated_hourly_wage');
                     assert.deepProperty(res.body[0], 'time_and_salary');
                     assert.isArray(res.body[0].time_and_salary);
-                    assert(res.body[0].time_and_salary.length >= 5);
+                    assert(res.body[0].time_and_salary.length = 5);
                     assert.deepProperty(res.body[0], 'time_and_salary.0.job_title');
                     // The first one don't have sector, see #183
                     // assert.deepProperty(res.body[0], 'time_and_salary.0.sector');
@@ -722,6 +787,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER1",
@@ -747,6 +813,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER2",
@@ -759,6 +826,7 @@ describe('Workings 工時資訊', () => {
                 overtime_frequency: 1,
                 day_promised_work_time: 9,
                 day_real_work_time: 10,
+                status: "published",
             },
             {
                 job_title: "ENGINEER2",
@@ -773,6 +841,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER3",
@@ -792,6 +861,7 @@ describe('Workings 工時資訊', () => {
                 },
                 estimated_hourly_wage: 100,
                 experience_in_year: 1,
+                status: "published",
             },
             {
                 job_title: "ENGINEER4",
@@ -812,6 +882,28 @@ describe('Workings 工時資訊', () => {
                     amount: 22000,
                 },
                 experience_in_year: 1,
+                status: "published",
+            },
+            {
+                job_title: "ENGINEER1",
+                company: { name: "COMPANY3" },
+                is_currently_employed: 'yes',
+                employment_type: 'full-time',
+                created_at: new Date("2016-07-20T06:00:00.000Z"),
+                data_time: {
+                    year: 2016,
+                    month: 7,
+                },
+                author: {
+                },
+                    // no work time data
+                    //
+                salary: {
+                    type: 'month',
+                    amount: 22000,
+                },
+                experience_in_year: 1,
+                status: "hidden",
             },
         ]));
 
@@ -1084,5 +1176,151 @@ describe('Workings 工時資訊', () => {
                 }));
 
         after(() => db.collection('workings').deleteMany({}));
+    });
+    describe('PATCH /workings/:id', () => {
+        let sandbox;
+        let user_working_id;
+        let other_user_working_id;
+        const fake_user = {
+            _id: new ObjectId(),
+            facebook_id: '-1',
+            facebook: {
+                id: '-1',
+                name: 'markLin',
+            },
+        };
+
+        const fake_other_user = {
+            _id: new ObjectId(),
+            facebook_id: '-2',
+            facebook: {
+                id: '-2',
+                name: 'lin',
+            },
+        };
+
+        before('mock user', () => {
+            sandbox = sinon.sandbox.create();
+            const cachedFacebookAuthentication = sandbox.stub(authentication, 'cachedFacebookAuthentication');
+            cachedFacebookAuthentication
+                .withArgs(sinon.match.object, sinon.match.object, 'fakeaccesstoken')
+                .resolves(fake_user);
+        });
+
+        before('Seeding some workings', async () => {
+            const user_working = Object.assign(generateWorkingData(), {
+                status: 'published',
+                author: {
+                    type: 'facebook',
+                    id: fake_user.facebook_id,
+                },
+            });
+            const other_user_working = Object.assign(generateWorkingData(), {
+                status: 'published',
+                author: {
+                    type: 'facebook',
+                    id: fake_other_user.facebook_id,
+                },
+            });
+            const result = await db.collection('workings').insertMany([
+                user_working,
+                other_user_working,
+            ]);
+            user_working_id = result.insertedIds[0];
+            other_user_working_id = result.insertedIds[1];
+        });
+
+
+        it('should return 200, when user updates his working',
+            async () => {
+                const res = await request(app).patch(`/workings/${user_working_id.toString()}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'hidden',
+                    });
+
+                assert.equal(res.status, 200);
+                assert.isTrue(res.body.success);
+                assert.equal(res.body.status, "hidden");
+
+                const working = await db.collection('workings').findOne({
+                    _id: user_working_id,
+                });
+                assert.equal(working.status, "hidden");
+            }
+        );
+
+        it('should return 401, when user did not login',
+            async () => {
+                const res = await request(app).patch(`/workings/${user_working_id.toString()}`)
+                    .send({
+                        status: 'hidden',
+                    });
+
+                assert.equal(res.status, 401);
+            }
+        );
+
+        it('should return 422, when status is invalid',
+            async () => {
+                const res = await request(app).patch(`/workings/${user_working_id.toString()}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'xxxxxx',
+                    });
+
+                assert.equal(res.status, 422);
+            }
+        );
+
+        it('should return 403, when user want to update not belong to his working',
+            async () => {
+                const res = await request(app).patch(`/workings/${other_user_working_id.toString()}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'hidden',
+                    });
+                assert.equal(res.status, 403);
+            }
+        );
+
+        it('should return 422, when user did not set the status field',
+            async () => {
+                const res = await request(app).patch(`/workings/${user_working_id}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                    });
+                assert.equal(res.status, 422);
+            }
+        );
+
+        it('should return 404, when the working id is invalid',
+            async () => {
+                const res = await request(app).patch(`/workings/xxxxxxxx`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'published',
+                    });
+                assert.equal(res.status, 404);
+            }
+        );
+
+        it('should return 404, when the working is does not exist',
+            async () => {
+                const res = await request(app).patch(`/working/${(new ObjectId()).toString()}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'published',
+                    });
+                assert.equal(res.status, 404);
+            }
+        );
+
+
+        after(() => db.collection('workings').deleteMany({}));
+
+        after(() => {
+            sandbox.restore();
+        });
     });
 });

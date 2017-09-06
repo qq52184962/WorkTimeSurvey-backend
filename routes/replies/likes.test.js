@@ -5,6 +5,7 @@ const sinon = require('sinon');
 const config = require('config');
 const app = require('../../app');
 const authentication = require('../../libs/authentication');
+const { generateReplyData } = require('../experiences/testData');
 
 describe('POST /replies/:id/likes', () => {
     let db;
@@ -19,6 +20,7 @@ describe('POST /replies/:id/likes', () => {
         facebook: { id: '2', name: 'Mark Chen' },
     };
     let reply_id_string;
+    let hidden_reply_id_string;
     const experience_id = new ObjectId();
     let sandbox;
 
@@ -26,19 +28,26 @@ describe('POST /replies/:id/likes', () => {
         db = _db;
     }));
 
-    beforeEach('Seed reply', () => {
-        const reply = {
+    beforeEach('Seed reply', async () => {
+        const published_reply = Object.assign(generateReplyData(), {
             experience_id,
-            content: 'Hello',
-            author_id: new ObjectId(),
-            floor: 2,
             like_count: 0,
-        };
+            status: 'published',
+        });
 
-        return db.collection('replies').insertOne(reply)
-            .then((result) => {
-                reply_id_string = result.insertedId.toString();
-            });
+        const hidden_reply = Object.assign(generateReplyData(), {
+            experience_id,
+            like_count: 0,
+            status: 'hidden',
+        });
+
+        const insert_result = await db.collection('replies').insertMany([
+            published_reply,
+            hidden_reply,
+        ]);
+
+        reply_id_string = insert_result.insertedIds[0].toString();
+        hidden_reply_id_string = insert_result.insertedIds[1].toString();
     });
 
     beforeEach('Mock', () => {
@@ -155,6 +164,13 @@ describe('POST /replies/:id/likes', () => {
         return check_replies_collection;
     });
 
+    it('it should 404 if like the hidden reply', () => request(app)
+            .post(`/replies/${hidden_reply_id_string}/likes`)
+            .send({
+                access_token: 'fakeAccessToken',
+            })
+            .expect(404));
+
     afterEach(() => {
         sandbox.restore();
     });
@@ -182,6 +198,7 @@ describe('DELETE /replies/:id/likes', () => {
         facebook: { id: '3', name: 'GoodJob' },
     };
     let reply_id_string;
+    let hidden_reply_id_string;
     const experience_id = new ObjectId();
     let sandbox;
 
@@ -189,20 +206,25 @@ describe('DELETE /replies/:id/likes', () => {
         db = _db;
     }));
 
-    // 插入一個留言（作者 3 號），有兩個按讚（作者 1, 2 號）
-    beforeEach('Seed replies', () => {
-        const reply = {
-            experience_id,
-            content: 'Hello',
-            author_id: fake_third_user._id,
-            floor: 1,
-            like_count: 2,
-        };
+    // 插入二個留言（作者 3 號），其中公開的留言有兩個按讚（作者 1, 2 號）
+    beforeEach('Seed replies', async () => {
+        const insert_result = await db.collection('replies').insertMany([
+            Object.assign(generateReplyData(), {
+                experience_id,
+                author_id: fake_third_user._id,
+                like_count: 2,
+                status: 'published',
+            }),
+            Object.assign(generateReplyData(), {
+                experience_id,
+                author_id: fake_third_user._id,
+                like_count: 2,
+                status: 'hidden',
+            }),
+        ]);
 
-        return db.collection('replies').insertOne(reply)
-            .then((result) => {
-                reply_id_string = result.insertedId.toString();
-            });
+        reply_id_string = insert_result.insertedIds[0].toString();
+        hidden_reply_id_string = insert_result.insertedIds[1].toString();
     });
 
     beforeEach('Seed reply_likes', () => {
@@ -307,6 +329,13 @@ describe('DELETE /replies/:id/likes', () => {
             .delete(`/replies/${reply_id_string}/likes`)
             .send({
                 access_token: 'thirdFakeAccessToken',
+            })
+            .expect(404));
+
+    it('it should 404 if dislike the hidden reply', () => request(app)
+            .delete(`/replies/${hidden_reply_id_string}/likes`)
+            .send({
+                access_token: 'fakeAccessToken',
             })
             .expect(404));
 

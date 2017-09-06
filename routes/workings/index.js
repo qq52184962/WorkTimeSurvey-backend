@@ -1,10 +1,14 @@
 const express = require('express');
 
 const router = express.Router();
-const HttpError = require('../../libs/errors').HttpError;
+const {
+    HttpError,
+    ObjectNotExistError,
+} = require('../../libs/errors');
 const escapeRegExp = require('lodash/escapeRegExp');
 const post_helper = require('./workings_post');
 const middleware = require('./middleware');
+const WorkingModel = require('../../models/working_model');
 const passport = require('passport');
 const wrap = require('../../libs/wrap');
 
@@ -37,9 +41,11 @@ router.get('/extreme', wrap(async (req, res) => {
 
     const defined_query = {
         [req.custom.sort_by]: { $exists: true },
+        status: 'published',
     };
     const undefined_query = {
         [req.custom.sort_by]: { $exists: false },
+        status: 'published',
     };
 
     const skip = Math.floor(count * 0.01);
@@ -99,13 +105,15 @@ router.get('/', wrap(async (req, res) => {
     }
 
     const data = {};
-    data.total = await collection.count();
+    data.total = await collection.find({ status: 'published' }).count();
 
     const defined_query = {
         [req.custom.sort_by]: { $exists: true },
+        status: 'published',
     };
     const undefined_query = {
         [req.custom.sort_by]: { $exists: false },
+        status: 'published',
     };
 
 
@@ -167,6 +175,7 @@ router.get('/search_by/company/group_by/company', (req, res, next) => {
                     { 'company.name': new RegExp(escapeRegExp(company.toUpperCase())) },
                     { 'company.id': company },
                 ],
+                status: 'published',
             },
         },
         {
@@ -323,6 +332,7 @@ router.get('/search_by/job_title/group_by/company', (req, res, next) => {
         {
             $match: {
                 job_title: new RegExp(escapeRegExp(job_title.toUpperCase())),
+                status: 'published',
             },
         },
         {
@@ -502,5 +512,54 @@ router.get('/jobs/search', (req, res, next) => {
         next(new HttpError("Internal Server Error", 500));
     });
 });
+
+function _isValidStatus(value) {
+    const valid_status = [
+        'published',
+        'hidden',
+    ];
+    return valid_status.indexOf(value) > -1;
+}
+
+/**
+ * @api {patch} /workings/:id 更新自已建立的工時與薪資狀態 API
+ * @apiParam {String="published","hidden"} status 要更新成的狀態
+ * @apiGroup Workings
+ * @apiSuccess {Boolean} success 是否更新狀態成功
+ * @apiSuccess {String} status 更新後狀態
+ */
+router.patch('/:id', [
+    passport.authenticate('bearer', { session: false }),
+    wrap(async (req, res) => {
+        const id = req.params.id;
+        const status = req.body.status;
+        const user = req.user;
+
+        if (!_isValidStatus(status)) {
+            throw new HttpError('status is invalid', 422);
+        }
+
+        const working_model = new WorkingModel(req.db);
+        let working;
+        try {
+            working = await working_model.getWorkingsById(id, { author: 1 });
+        } catch (err) {
+            if (err instanceof ObjectNotExistError) {
+                throw new HttpError(err.message, 404);
+            }
+            throw err;
+        }
+
+        if (!(working.author.id === user.facebook_id)) {
+            throw new HttpError('user is unauthorized', 403);
+        }
+
+        const result = await working_model.updateStatus(id, status);
+        res.send({
+            success: true,
+            status: result.value.status,
+        });
+    }),
+]);
 
 module.exports = router;

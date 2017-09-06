@@ -48,7 +48,9 @@ class ReplyModel {
                 experience_id: new ObjectId(experience_id),
                 floor: reply_count - 1,
                 like_count: 0,
+                report_count: 0,
                 created_at: new Date(),
+                status: 'published',
             });
 
             return this.collection.insertOne(partial_reply);
@@ -56,7 +58,31 @@ class ReplyModel {
     }
 
     /**
-     * 根據經驗文章id，取得文章留言
+     * 用來驗證要留言是否存在
+     * @param  {string}  id_str - string
+     * @return {Promise}
+     *  - resolved : true/false
+     *  - reject : Default error
+     */
+    isExist(id_str) {
+        if (!mongo.ObjectId.isValid(id_str)) {
+            return Promise.resolve(false);
+        }
+
+        return this.collection.findOne({
+            _id: new mongo.ObjectId(id_str),
+        }, {
+            _id: 1,
+        }).then((result) => {
+            if (result) {
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /**
+     * 根據經驗文章id，取得 published 的留言
      * @param {string} experience_id - experience's id
      * @param {number} skip - start index (Default: 0)
      * @param {number} limit - limit (Default: 20)
@@ -74,7 +100,7 @@ class ReplyModel {
      *      report_count: 0,
      *  }
      */
-    getRepliesByExperienceId(experience_id, skip = 0, limit = 20, sort = {
+    getPublishedRepliesByExperienceId(experience_id, skip = 0, limit = 20, sort = {
         floor: 1,
     }) {
         const experience_model = new ExperienceModel(this._db);
@@ -84,6 +110,7 @@ class ReplyModel {
             }
             return this.collection.find({
                 experience_id: new ObjectId(experience_id),
+                status: "published",
             }).sort(sort).skip(skip).limit(limit)
             .toArray();
         });
@@ -111,6 +138,29 @@ class ReplyModel {
         });
     }
 
+    /**
+     * 根據reply id 來取得 published 的留言
+     * @param {string} id - reply id
+     * @returns {Promise} -
+     * resolve {
+     *  _id : ObjectId,
+     *  experience_id : ObjectId,
+     *  author_id: ObjectId,
+     *  created_at: new Date(),
+     *  like_count: 0,
+     * }
+     */
+    getPublishedReplyById(id) {
+        if (!this._isValidId(id)) {
+            return Promise.reject(new ObjectNotExistError("該留言不存在"));
+        }
+
+        return this.collection.findOne({
+            status: 'published',
+            _id: new ObjectId(id),
+        });
+    }
+
     // eslint-disable-next-line class-methods-use-this
     _isValidId(id) {
         return (id && mongo.ObjectId.isValid(id));
@@ -133,6 +183,23 @@ class ReplyModel {
         );
     }
 
+    incrementReportCount(id) {
+        if (!this._isValidId(id)) {
+            return Promise.reject(new ObjectNotExistError("該留言不存在"));
+        }
+
+        return this.collection.updateOne(
+            {
+                _id: new ObjectId(id),
+            },
+            {
+                $inc: {
+                    report_count: 1,
+                },
+            }
+        );
+    }
+
     decrementLikeCount(id) {
         if (!this._isValidId(id)) {
             return Promise.reject(new ObjectNotExistError("該留言不存在"));
@@ -148,6 +215,42 @@ class ReplyModel {
                 },
             }
         );
+    }
+
+    updateStatus(_id, status) {
+        return this.collection.updateOne({
+            _id,
+        }, {
+            $set: { status },
+        });
+    }
+
+    /**
+     * @param   {object}  query - mognodb find query
+     * @returns {Promise}
+     *  - resolved : 10 (Number)
+     */
+    getCount(query) {
+        return this.collection.find(query, { _id: 1 }).count();
+    }
+
+    /**
+     * 使用 query 來尋找文章
+     * @param {object} query - mongodb query
+     * @param {object} sort
+     * @param {number} skip = 0
+     * @param {number} limit = 20
+     * @param {object} opt = {} - mongodb find field filter
+     *
+     * @returns {Promise}
+     */
+    getReplies(query, sort, skip = 0, limit = 20, opt = {}) {
+        return this.collection
+            .find(query, opt)
+            .sort(sort)
+            .skip(skip)
+            .limit(limit)
+            .toArray();
     }
 }
 

@@ -11,8 +11,10 @@ const {
     requiredNumberGreaterThanOrEqualTo,
     shouldIn,
 } = require('../../libs/validation');
+const passport = require('passport');
 const { semiAuthentication } = require('../../middlewares/authentication');
 const wrap = require('../../libs/wrap');
+const generateGetExperiencesViewModel = require('../../view_models/get_experiences');
 
 /**
  * _queryToDBQuery
@@ -24,6 +26,8 @@ const wrap = require('../../libs/wrap');
  */
 function _queryToDBQuery(search_query, search_by, type) {
     const query = {};
+    query.status = 'published';
+
     if (!((search_by && search_query) || type)) {
         return query;
     }
@@ -49,49 +53,6 @@ function _queryToDBQuery(search_query, search_by, type) {
         }
     }
     return query;
-}
-
-function _generateGetExperiencesViewModel(experiences, total) {
-    const MAX_PREVIEW_SIZE = 160;
-
-    const view_experiences = experiences.map(experience => {
-        let experience_view_model = {
-            _id: experience._id,
-            type: experience.type,
-            created_at: experience.created_at,
-            company: experience.company,
-            job_title: experience.job_title,
-            title: experience.title,
-            preview: (() => {
-                if (experience.sections[0]) {
-                    return experience.sections[0].content.substring(0, MAX_PREVIEW_SIZE);
-                }
-                return null;
-            })(),
-            like_count: experience.like_count,
-            reply_count: experience.reply_count,
-        };
-        if (experience.type === 'interview') {
-            experience_view_model = Object.assign(experience_view_model, {
-                region: experience.region,
-                salary: experience.salary,
-            });
-        } else if (experience.type === 'work') {
-            experience_view_model = Object.assign(experience_view_model, {
-                region: experience.region,
-                salary: experience.salary,
-                week_work_time: experience.week_work_time,
-            });
-        }
-        return experience_view_model;
-    });
-
-    const result = {
-        total,
-        experiences: view_experiences,
-    };
-
-    return result;
 }
 
 function _keyWordFactory(type) {
@@ -134,6 +95,9 @@ function _saveKeyWord(query, type, db) {
  * @apiSuccess {String} experiences.job_title 職稱
  * @apiSuccess {String} experiences.title 標題
  * @apiSuccess {string} experiences.preview 整篇內容的preview。直接使用第1個section的內容，至多前Ｎ個字。N=160。
+ * @apiSuccess {Number}  experiences.like_count 讚數 
+ * @apiSuccess {Number}  experiences.reply_count 留言數 
+ * @apiSuccess {Number}  experiences.report_count 檢舉數
  * @apiSuccess (interview) {String="彰化縣","嘉義市","嘉義縣","新竹市","新竹縣","花蓮縣","高雄市","基隆市","金門縣","連江縣","苗栗縣","南投縣","新北市","澎湖縣","屏東縣","臺中市","臺南市","臺北市","臺東縣","桃園市","宜蘭縣","雲林縣"} experiences.region 面試地區
  * @apiSuccess (interview) {Object} [experiences.salary] 面談薪資
  * @apiSuccess (interview) {String="year","month","day","hour"} experiences.salary.type 面談薪資種類 (面談薪資存在的話，一定有此欄位)
@@ -186,7 +150,7 @@ router.get('/', wrap(async (req, res) => {
     const total = await experience_model.getExperiencesCountByQuery(query);
     const experiences = await experience_model.getExperiences(query, sort, start, limit);
 
-    res.send(_generateGetExperiencesViewModel(experiences, total));
+    res.send(generateGetExperiencesViewModel(experiences, total));
 }));
 
 function _generateGetExperienceViewModel(experience, user, like) {
@@ -203,6 +167,7 @@ function _generateGetExperienceViewModel(experience, user, like) {
         sections: experience.sections,
         like_count: experience.like_count,
         reply_count: experience.reply_count,
+        report_count: experience.report_count,
     };
 
     if (user) {
@@ -249,6 +214,7 @@ function _generateGetExperienceViewModel(experience, user, like) {
  * @apiSuccess {String}  sections.content 段落內容
  * @apiSuccess {Number}  like_count 讚數
  * @apiSuccess {Number}  reply_count 留言數
+ * @apiSuccess {Number}  report_count 檢舉數
  * @apiSuccess {Boolean}  liked 該名使用者是否已經讚過該篇經驗分享 (若使用者未登入，則不會回傳本欄位)
  * @apiSuccess (interview) {Object}  interview_time 面試時間
  * @apiSuccess (interview) {Number}  interview_time.year 面試時間的年份
@@ -270,12 +236,14 @@ function _generateGetExperienceViewModel(experience, user, like) {
  * @apiSuccess (work) {Number}  data_time.year 留資料的時間或離職的年份
  * @apiSuccess (work) {Number="1,2,3...12"}  data_time.month 留資料的時間或離職的月份
  * @apiSuccess (work) {String}  [recommend_to_others="yes","no"] 是否推薦此工作
+ * @apiError (Error) 403 該篇文章已被隱藏
+ * @apiError (Error) 404 該篇文章不存在
  */
 /* eslint-enable */
 router.get('/:id', [
     semiAuthentication('bearer', { session: false }),
     wrap(async (req, res) => {
-        const id = req.params.id;
+        const id_str = req.params.id;
         let user = null;
 
         if (req.user) {
@@ -287,7 +255,7 @@ router.get('/:id', [
 
         let experience = null;
         try {
-            experience = await experience_model.getExperienceById(id);
+            experience = await experience_model.getExperienceById(id_str);
         } catch (err) {
             if (err instanceof ObjectNotExistError) {
                 throw new HttpError(err.message, 404);
@@ -295,9 +263,13 @@ router.get('/:id', [
             throw err;
         }
 
+        if (experience.status === 'hidden') {
+            throw new HttpError('the experience is hidden', 403);
+        }
+
         let result;
         if (user) {
-            const like = await experience_like_model.getLikeByExperienceIdAndUser(id, user);
+            const like = await experience_like_model.getLikeByExperienceIdAndUser(id_str, user);
             result = _generateGetExperienceViewModel(experience, user, like);
         } else {
             result = _generateGetExperienceViewModel(experience);
@@ -306,7 +278,61 @@ router.get('/:id', [
     }),
 ]);
 
+
+function _isLegalStatus(value) {
+    const legal_status = [
+        'published',
+        'hidden',
+    ];
+    return legal_status.indexOf(value) > -1;
+}
+
+/**
+ * @api {patch} /experiences/:id 更新自已建立的經驗狀態 API
+ * @apiParam {String="published","hidden"} status 要更新成的狀態
+ * @apiGroup Experiences
+ * @apiSuccess {Boolean} success 是否成功點讚
+ * @apiSuccess {String} status 更新後狀態
+ */
+router.patch('/:id', [
+    passport.authenticate('bearer', { session: false }),
+    wrap(async (req, res) => {
+        const id = req.params.id;
+        const status = req.body.status;
+        const user = req.user;
+
+        if (!_isLegalStatus(status)) {
+            throw new HttpError('status is illegal', 422);
+        }
+
+        const experience_model = new ExperienceModel(req.db);
+
+
+        try {
+            const experience = await experience_model.getExperienceById(id, { author_id: 1 });
+
+            if (!experience.author_id.equals(user._id)) {
+                throw new HttpError('user is unauthorized', 403);
+            }
+
+            const result = await experience_model.updateStatus(id, status);
+
+            res.send({
+                success: true,
+                status: result.value.status,
+            });
+        } catch (err) {
+            if (err instanceof ObjectNotExistError) {
+                throw new HttpError(err.message, 404);
+            }
+            throw err;
+        }
+    }),
+]);
+
+
 router.use('/', require('./replies'));
 router.use('/', require('./likes'));
+router.use('/', require('./reports'));
 
 module.exports = router;

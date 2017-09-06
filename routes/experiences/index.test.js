@@ -27,8 +27,9 @@ describe('Experiences 面試和工作經驗資訊', () => {
     }));
 
     describe('GET /experiences/:id', () => {
-        let test_interview_experience_id = null;
-        let test_work_experience_id = null;
+        let interview_experience_id_str = null;
+        let work_experience_id_str = null;
+        let interview_hidden_experience_id_str = null;
         let sandbox = null;
         const fake_user = {
             _id: new ObjectId(),
@@ -58,44 +59,54 @@ describe('Experiences 面試和工作經驗資訊', () => {
                 .resolves(fake_other_user);
         });
 
-        before('Seed experiences collection', () => db.collection('experiences').insertMany([generateInterviewExperienceData(), generateWorkExperienceData()])
-                .then((result) => {
-                    test_interview_experience_id = result.insertedIds[0].toString();
-                    test_work_experience_id = result.insertedIds[1].toString();
-                }));
+        before('Seed experiences collection',
+            async () => {
+                const experiences = await db.collection('experiences').insertMany([
+                    generateInterviewExperienceData(),
+                    generateWorkExperienceData(),
+                    Object.assign(generateInterviewExperienceData(), {
+                        status: 'hidden',
+                    }),
+                ]);
+
+                interview_experience_id_str = experiences.insertedIds[0].toString();
+                work_experience_id_str = experiences.insertedIds[1].toString();
+                interview_hidden_experience_id_str = experiences.insertedIds[2].toString();
+            }
+         );
 
         before('Seed experience_likes collection', () => db.collection('experience_likes').insertOne({
             created_at: new Date(),
             user_id: fake_other_user._id,
-            experience_id: new ObjectId(test_interview_experience_id),
+            experience_id: new ObjectId(interview_experience_id_str),
         }));
 
-        it('should not see liked if not authenticated', () => request(app).get(`/experiences/${test_interview_experience_id}`)
+        it('should not see liked if not authenticated', () => request(app).get(`/experiences/${interview_experience_id_str}`)
                 .expect(200)
                 .expect((res) => {
-                    assert.equal(res.body._id, test_interview_experience_id);
+                    assert.equal(res.body._id, interview_experience_id_str);
                     assert.notDeepProperty(res.body, 'author_id');
                     assert.notDeepProperty(res.body, 'liked');
                 }));
 
-        it('should see liked = true if authenticated user liked', () => request(app).get(`/experiences/${test_interview_experience_id}`)
+        it('should see liked = true if authenticated user liked', () => request(app).get(`/experiences/${interview_experience_id_str}`)
                 .send({
                     access_token: 'fakeOtheraccesstoken',
                 })
                 .expect(200)
                 .expect((res) => {
-                    assert.equal(res.body._id, test_interview_experience_id);
+                    assert.equal(res.body._id, interview_experience_id_str);
                     assert.notDeepProperty(res.body, 'author_id');
                     assert.isTrue(res.body.liked);
                 }));
 
-        it('should see liked = false if authenticated user not liked', () => request(app).get(`/experiences/${test_interview_experience_id}`)
+        it('should see liked = false if authenticated user not liked', () => request(app).get(`/experiences/${interview_experience_id_str}`)
                 .send({
                     access_token: 'fakeaccesstoken',
                 })
                 .expect(200)
                 .expect((res) => {
-                    assert.equal(res.body._id, test_interview_experience_id);
+                    assert.equal(res.body._id, interview_experience_id_str);
                     assert.notDeepProperty(res.body, 'author_id');
                     assert.isFalse(res.body.liked);
                 }));
@@ -103,7 +114,7 @@ describe('Experiences 面試和工作經驗資訊', () => {
         it('should be status 404 NotFound if experiences does not exist', () => request(app).get("/experiences/123XXX")
                 .expect(404));
 
-        it('should get one interview experience, and it returns correct fields', () => request(app).get(`/experiences/${test_interview_experience_id}`)
+        it('should get one interview experience, and it returns correct fields', () => request(app).get(`/experiences/${interview_experience_id_str}`)
                 .send({
                     access_token: 'fakeaccesstoken',
                 })
@@ -122,6 +133,7 @@ describe('Experiences 面試和工作經驗資訊', () => {
                     assert.property(experience, 'education');
                     assert.property(experience, 'like_count');
                     assert.property(experience, 'reply_count');
+                    assert.property(experience, 'report_count');
                     assert.property(experience, 'created_at');
                     assert.property(experience, 'liked');
 
@@ -139,7 +151,7 @@ describe('Experiences 面試和工作經驗資訊', () => {
                     assert.notProperty(experience, 'author_id');
                 }));
 
-        it('should get one work experience, and it returns correct fields ', () => request(app).get(`/experiences/${test_work_experience_id}`)
+        it('should get one work experience, and it returns correct fields ', () => request(app).get(`/experiences/${work_experience_id_str}`)
                 .send({
                     access_token: 'fakeaccesstoken',
                 })
@@ -158,6 +170,7 @@ describe('Experiences 面試和工作經驗資訊', () => {
                     assert.property(experience, 'education');
                     assert.property(experience, 'like_count');
                     assert.property(experience, 'reply_count');
+                    assert.property(experience, 'report_count');
                     assert.property(experience, 'created_at');
                     assert.property(experience, 'liked');
 
@@ -170,6 +183,18 @@ describe('Experiences 面試和工作經驗資訊', () => {
 
                     assert.notProperty(experience, 'author_id');
                 }));
+
+        it('should be forbidden, when the status of experience is hidden',
+            async () => {
+                const res = await request(app).get(`/experiences/${interview_hidden_experience_id_str}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                    });
+
+                assert.equal(res.status, 403);
+            }
+        );
+
 
         after(() => db.collection('experiences').deleteMany({}));
 
@@ -243,11 +268,23 @@ describe('Experiences 面試和工作經驗資訊', () => {
                 like_count: 0,
             });
 
+            const work_data_3 = Object.assign(generateWorkExperienceData(), {
+                company: {
+                    name: "GOODJOB1",
+                    id: "123",
+                },
+                job_title: "F2E",
+                created_at: new Date("2017-03-25T10:00:00.929Z"),
+                like_count: 0,
+                status: "hidden",
+            });
+
             return db.collection('experiences').insertMany([
                 inter_data_1,
                 work_data_1,
                 inter_data_2,
                 work_data_2,
+                work_data_3,
             ]);
         });
 
@@ -362,6 +399,7 @@ describe('Experiences 面試和工作經驗資訊', () => {
                     assert.property(experience, 'preview');
                     assert.property(experience, 'like_count');
                     assert.property(experience, 'reply_count');
+                    assert.property(experience, 'report_count');
 
                     assert.notProperty(experience, 'author_id');
                     assert.notProperty(experience, 'overall_rating');
@@ -392,6 +430,7 @@ describe('Experiences 面試和工作經驗資訊', () => {
                     assert.property(experience, 'week_work_time');
                     assert.property(experience, 'like_count');
                     assert.property(experience, 'reply_count');
+                    assert.property(experience, 'report_count');
 
                     assert.notProperty(experience, 'author_id');
                     assert.notProperty(experience, 'sections');
@@ -517,5 +556,142 @@ describe('Experiences 面試和工作經驗資訊', () => {
             create_title_keyword_collection(db),
             create_company_keyword_collection(db),
         ])));
+    });
+
+    describe('PATCH /experiences/:id', () => {
+        let sandbox;
+        let user_experience_id_string;
+        let other_user_experience_id_string;
+        const fake_user = {
+            _id: new ObjectId(),
+            facebook_id: '-1',
+            facebook: {
+                id: '-1',
+                name: 'markLin',
+            },
+        };
+
+        const fake_other_user = {
+            _id: new ObjectId(),
+            facebook_id: '-2',
+            facebook: {
+                id: '-2',
+                name: 'lin',
+            },
+        };
+
+        before('mock user', () => {
+            sandbox = sinon.sandbox.create();
+            const cachedFacebookAuthentication = sandbox.stub(authentication, 'cachedFacebookAuthentication');
+            cachedFacebookAuthentication
+                .withArgs(sinon.match.object, sinon.match.object, 'fakeaccesstoken')
+                .resolves(fake_user);
+        });
+
+        before('seeding the data', async () => {
+            const inter_data_1 = Object.assign(generateInterviewExperienceData(), {
+                status: 'published',
+                author_id: fake_user._id,
+            });
+            const inter_data_2 = Object.assign(generateInterviewExperienceData(), {
+                status: 'published',
+                author_id: fake_other_user._id,
+            });
+
+            const insert_result = await db.collection('experiences').insertMany([inter_data_1, inter_data_2]);
+            user_experience_id_string = insert_result.insertedIds[0].toString();
+            other_user_experience_id_string = insert_result.insertedIds[1].toString();
+        });
+
+        it('should return 200, while user updates his experience status',
+            async () => {
+                const res = await request(app).patch(`/experiences/${user_experience_id_string}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'hidden',
+                    });
+
+                assert.equal(res.status, 200);
+                assert.isTrue(res.body.success);
+                assert.equal(res.body.status, "hidden");
+
+                const experience = await db.collection('experiences').findOne({
+                    _id: new ObjectId(user_experience_id_string),
+                });
+                assert.equal(experience.status, "hidden");
+            }
+        );
+
+        it('should return 401, while user did not login',
+            async () => {
+                const res = await request(app).patch(`/experiences/${user_experience_id_string}`)
+                    .send({
+                        status: 'hidden',
+                    });
+
+                assert.equal(res.status, 401);
+            }
+        );
+
+        it('should return 422, while user send error status',
+            async () => {
+                const res = await request(app).patch(`/experiences/${user_experience_id_string}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'xxxxxx',
+                    });
+
+                assert.equal(res.status, 422);
+            }
+        );
+
+        it('should return 403, while user want to update not belong to him experience',
+            async () => {
+                const res = await request(app).patch(`/experiences/${other_user_experience_id_string}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'hidden',
+                    });
+                assert.equal(res.status, 403);
+            }
+        );
+
+        it('should return 422, while user did not set the status field',
+            async () => {
+                const res = await request(app).patch(`/experiences/${other_user_experience_id_string}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                    });
+                assert.equal(res.status, 422);
+            }
+        );
+
+        it('should return 404, while the experience id is illegal',
+            async () => {
+                const res = await request(app).patch(`/experiences/xxxxxxxx`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'published',
+                    });
+                assert.equal(res.status, 404);
+            }
+        );
+
+        it('should return 404, while the experience is not exist',
+            async () => {
+                const res = await request(app).patch(`/experiences/${(new ObjectId()).toString()}`)
+                    .send({
+                        access_token: 'fakeaccesstoken',
+                        status: 'published',
+                    });
+                assert.equal(res.status, 404);
+            }
+        );
+
+        after(() => db.collection('experiences').deleteMany({}));
+
+        after(() => {
+            sandbox.restore();
+        });
     });
 });
