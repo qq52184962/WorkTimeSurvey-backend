@@ -1,12 +1,14 @@
-const assert = require("chai").assert;
+const { assert } = require("chai");
 const request = require("supertest");
-const app = require("../../app");
 const { MongoClient, ObjectId } = require("mongodb");
 const sinon = require("sinon");
 const config = require("config");
 
+const app = require("../../app");
 const authentication = require("../../libs/authentication");
 const { generateReplyData } = require("../experiences/testData");
+const { ensureToObjectId } = require("../../models");
+const create_capped_collection = require("../../database/migrations/migration-2017-09-08-create-popularExperienceLogs-collection");
 
 describe("Replies Test", () => {
     let db;
@@ -69,6 +71,23 @@ describe("Replies Test", () => {
                 .then(result => {
                     experience_id_string = result.insertedId.toString();
                 });
+        });
+
+        it("should insert one log", async () => {
+            await request(app)
+                .post(`/experiences/${experience_id_string}/replies`)
+                .send({
+                    access_token: "fakeaccesstoken",
+                    content: "你好我是大留言",
+                });
+
+            const result = await db
+                .collection("popular_experience_logs")
+                .find({ experience_id: ensureToObjectId(experience_id_string) })
+                .toArray();
+
+            assert.lengthOf(result, 1);
+            assert.equal(result[0].action_type, "reply");
         });
 
         it("should 200 Success if succeed", () => {
@@ -179,6 +198,13 @@ describe("Replies Test", () => {
         afterEach(() => {
             sandbox.restore();
         });
+
+        afterEach(() =>
+            db
+                .collection("popular_experience_logs")
+                .drop()
+                .then(() => create_capped_collection(db))
+        );
     });
 
     describe("GET /experiences/:id/replies", () => {
