@@ -1,9 +1,8 @@
-const HttpError = require("../../libs/errors").HttpError;
-const ObjectIdError = require("../../libs/errors").ObjectIdError;
 const winston = require("winston");
 const helper = require("./helper");
 const companyHelper = require("../company_helper");
 const recommendation = require("../../libs/recommendation");
+const { HttpError, ObjectIdError } = require("../../libs/errors");
 
 function checkBodyField(req, field) {
     if (
@@ -22,7 +21,7 @@ function checkBodyField(req, field) {
  * req.custom.working
  * req.custom.company_query
  */
-function collectData(req, res) {
+function collectData(req, res, next) {
     req.custom.author = {};
     const author = req.custom.author;
     req.custom.working = {
@@ -92,7 +91,7 @@ function collectData(req, res) {
         req.custom.recommendation_string = req.body.recommendation_string;
     }
 
-    return Promise.resolve();
+    next();
 }
 
 /*
@@ -322,7 +321,7 @@ function validateSalaryData(req) {
     }
 }
 
-function validation(req, res) {
+function validation(req, res, next) {
     const data = req.custom.working;
     const custom = req.custom;
 
@@ -331,7 +330,7 @@ function validation(req, res) {
     } catch (err) {
         winston.info("validating fail", { ip: req.ip, ips: req.ips });
 
-        return Promise.reject(err);
+        throw err;
     }
 
     let hasWorkingTimeData = false;
@@ -350,7 +349,7 @@ function validation(req, res) {
         try {
             validateWorkingTimeData(req);
         } catch (err) {
-            return Promise.reject(err);
+            throw err;
         }
     }
 
@@ -359,23 +358,19 @@ function validation(req, res) {
         try {
             validateSalaryData(req);
         } catch (err) {
-            return Promise.reject(err);
+            throw err;
         }
     }
 
     if (!hasWorkingTimeData && !hasSalaryData) {
-        return Promise.reject(new HttpError("薪資或工時欄位擇一必填", 422));
+        throw new HttpError("薪資或工時欄位擇一必填", 422);
     }
 
-    return Promise.resolve();
+    next();
 }
 
-function main(req, res, next) {
+async function normalizeData(req, res, next) {
     const working = req.custom.working;
-    const company_query = req.custom.company_query;
-    const response_data = {
-        working,
-    };
 
     /*
      * Normalize the data
@@ -417,10 +412,7 @@ function main(req, res, next) {
         working.status = "published";
     }
 
-    const collection = req.db.collection("workings");
-    /*
-     *  這邊處理需要呼叫async函數的部份
-     */
+    const company_query = req.custom.company_query;
     /*
      * 如果使用者有給定 company id，將 company name 補成查詢到的公司
      *
@@ -428,87 +420,84 @@ function main(req, res, next) {
      *
      * 其他情況看 issue #7
      */
-    companyHelper
-        .getCompanyByIdOrQuery(req.db, working.company.id, company_query)
-        .then(company => {
-            working.company = company;
-        })
-        .then(() => {
-            // 這邊嘗試從recommendation_string去取得推薦使用者的資訊
-            if (req.custom.recommendation_string) {
-                return recommendation
-                    .getUserByRecommendationString(
-                        req.db,
-                        req.custom.recommendation_string
-                    )
-                    .then(
-                        result => {
-                            // if no error but still cannot find user
-                            if (result === null) {
-                                return null;
-                            }
-                            return result;
-                        },
-                        err => {
-                            // if recommendation_string is not valid
-                            if (err instanceof ObjectIdError) {
-                                return null;
-                            }
-                            throw err;
-                        }
-                    );
+    const company = await companyHelper.getCompanyByIdOrQuery(
+        req.db,
+        working.company.id,
+        company_query
+    );
+    working.company = company;
+
+    next();
+}
+async function main(req, res) {
+    const { working } = req.custom;
+    const response_data = { working };
+    const collection = req.db.collection("workings");
+
+    try {
+        let rec_user = null;
+        // 這邊嘗試從recommendation_string去取得推薦使用者的資訊
+        if (req.custom.recommendation_string) {
+            try {
+                const result = await recommendation.getUserByRecommendationString(
+                    req.db,
+                    req.custom.recommendation_string
+                );
+
+                if (result !== null) {
+                    rec_user = result;
+                }
+            } catch (err) {
+                // if recommendation_string is valid
+                if (!(err instanceof ObjectIdError)) {
+                    throw err;
+                }
             }
-            return null;
-        })
-        .then(rec_user => {
-            if (rec_user !== null) {
-                working.recommended_by = rec_user;
-                return req.db
-                    .collection("recommendations")
-                    .update({ user: rec_user }, { $inc: { count: 1 } });
-            }
+        }
+        if (rec_user !== null) {
+            working.recommended_by = rec_user;
+            await req.db
+                .collection("recommendations")
+                .update({ user: rec_user }, { $inc: { count: 1 } });
+        } else if (req.custom.recommendation_string) {
             // 如果不是 user，依然把 recommendation_string 儲存起來
-            if (req.custom.recommendation_string) {
-                working.recommended_by = req.custom.recommendation_string;
-            }
-        })
-        .then(() => {
-            const author = working.author;
+            working.recommended_by = req.custom.recommendation_string;
+        }
 
-            return helper
-                .checkAndUpdateQuota(req.db, {
-                    id: author.id,
-                    type: author.type,
-                })
-                .then(queries_count => {
-                    response_data.queries_count = queries_count;
-                });
-        })
-        .then(() => collection.insert(working))
-        .then(() => {
-            winston.info("workings insert data success", {
-                id: working._id,
-                ip: req.ip,
-                ips: req.ips,
-            });
-            // delete some sensitive information before sending response
-            delete response_data.working.recommended_by;
-            res.send(response_data);
-        })
-        .catch(err => {
-            winston.info("workings insert data fail", {
-                id: working._id,
-                ip: req.ip,
-                ips: req.ips,
-                err,
-            });
+        const author = working.author;
 
-            next(err);
+        const queries_count = await helper.checkAndUpdateQuota(req.db, {
+            id: author.id,
+            type: author.type,
         });
+        response_data.queries_count = queries_count;
+
+        await collection.insert(working);
+
+        winston.info("workings insert data success", {
+            id: working._id,
+            ip: req.ip,
+            ips: req.ips,
+        });
+        // delete some sensitive information before sending response
+        delete response_data.working.recommended_by;
+
+        res.send(response_data);
+    } catch (err) {
+        winston.info("workings insert data fail", {
+            id: working._id,
+            ip: req.ip,
+            ips: req.ips,
+            err,
+        });
+
+        throw err;
+    }
 }
 
 module.exports = {
     collectData,
     validation,
+    normalizeData,
     main,
 };
