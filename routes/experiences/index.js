@@ -1,4 +1,5 @@
 const express = require("express");
+const R = require("ramda");
 
 const router = express.Router();
 const HttpError = require("../../libs/errors").HttpError;
@@ -14,10 +15,11 @@ const {
 const passport = require("passport");
 const { semiAuthentication } = require("../../middlewares/authentication");
 const wrap = require("../../libs/wrap");
-const generateGetExperiencesViewModel = require("../../view_models/get_experiences");
+const { experiencesView } = require("../../view_models/get_experiences");
+const { experienceView } = require("../../view_models/get_experience");
 
 /**
- * _queryToDBQuery
+ * paramter to DB query object
  *
  * @param {string} search_query - search text
  * @param {string} search_by - "company" / "job_title"
@@ -25,16 +27,13 @@ const generateGetExperiencesViewModel = require("../../view_models/get_experienc
  * @returns {object} - mongodb find object
  */
 function _queryToDBQuery(search_query, search_by, type) {
-    const query = {};
-    query.status = "published";
-
-    if (!((search_by && search_query) || type)) {
-        return query;
-    }
+    const query = {
+        status: "published",
+    };
 
     if (search_by === "job_title") {
         query.job_title = new RegExp(escapeRegExp(search_query.toUpperCase()));
-    } else if (search_query) {
+    } else if (search_by === "company") {
         query.$or = [
             {
                 "company.name": new RegExp(
@@ -45,6 +44,8 @@ function _queryToDBQuery(search_query, search_by, type) {
                 "company.id": search_query,
             },
         ];
+    } else {
+        // not search, just list
     }
 
     if (type) {
@@ -56,7 +57,10 @@ function _queryToDBQuery(search_query, search_by, type) {
                 $in: types,
             };
         }
+    } else {
+        // all types is returned;
     }
+
     return query;
 }
 
@@ -77,6 +81,44 @@ function _saveKeyWord(query, type, db) {
 
     const keyword_model = new (_keyWordFactory(type))(db);
     return keyword_model.createKeyword(query);
+}
+
+function validateGetExperiencesInput(req) {
+    const {
+        // optional
+        search_query,
+        search_by,
+        sort,
+        start,
+        limit,
+    } = req.query;
+
+    if (search_query) {
+        if (!search_by) {
+            throw new HttpError("search_by 不能為空", 422);
+        }
+        if (!shouldIn(search_by, ["company", "job_title"])) {
+            throw new HttpError("search_by 格式錯誤", 422);
+        }
+    }
+
+    if (sort) {
+        if (!shouldIn(sort, ["created_at", "popularity"])) {
+            throw new HttpError("sort 格式錯誤", 422);
+        }
+    }
+
+    if (start) {
+        if (!requiredNumberGreaterThanOrEqualTo(parseInt(start, 10), 0)) {
+            throw new HttpError("start 格式錯誤", 422);
+        }
+    }
+
+    if (limit) {
+        if (!requiredNumberInRange(parseInt(limit), 1, 100)) {
+            throw new HttpError("limit 格式錯誤", 422);
+        }
+    }
 }
 
 /* eslint-disable */
@@ -117,33 +159,16 @@ function _saveKeyWord(query, type, db) {
 router.get(
     "/",
     wrap(async (req, res) => {
+        validateGetExperiencesInput(req);
+
         const search_query = req.query.search_query;
         const search_by = req.query.search_by;
         const sort_field = req.query.sort || "created_at";
         const start = parseInt(req.query.start, 10) || 0;
-        const limit = Number(req.query.limit || 20);
-        const type = req.query.type;
-
-        if (search_query) {
-            if (!search_by) {
-                throw new HttpError("search_by 不能為空", 422);
-            }
-            if (!shouldIn(search_by, ["company", "job_title"])) {
-                throw new HttpError("search_by 格式錯誤", 422);
-            }
-        }
-
-        if (!shouldIn(sort_field, ["created_at", "popularity"])) {
-            throw new HttpError("sort_by 格式錯誤", 422);
-        }
-
-        if (!requiredNumberGreaterThanOrEqualTo(start, 0)) {
-            throw new HttpError("start 格式錯誤", 422);
-        }
-
-        if (!requiredNumberInRange(limit, 1, 100)) {
-            throw new HttpError("limit 格式錯誤", 422);
-        }
+        const limit = parseInt(req.query.limit, 10) || 20;
+        // 在插入實習經驗的時期，加上 interview,work as default value
+        // 避免前端的網頁出問題
+        const type = req.query.type || "interview,work";
 
         const query = _queryToDBQuery(search_query, search_by, type);
         _saveKeyWord(search_query, search_by, req.db);
@@ -163,52 +188,12 @@ router.get(
             limit
         );
 
-        res.send(generateGetExperiencesViewModel(experiences, total));
+        res.send({
+            experiences: experiencesView(experiences),
+            total,
+        });
     })
 );
-
-function _generateGetExperienceViewModel(experience, user, like) {
-    let result = {
-        _id: experience._id,
-        type: experience.type,
-        created_at: experience.created_at,
-        company: experience.company,
-        job_title: experience.job_title,
-        experience_in_year: experience.experience_in_year,
-        education: experience.education,
-        region: experience.region,
-        title: experience.title,
-        sections: experience.sections,
-        like_count: experience.like_count,
-        reply_count: experience.reply_count,
-        report_count: experience.report_count,
-    };
-
-    if (user) {
-        result.liked = !!like;
-    }
-
-    if (experience.type === "interview") {
-        result = Object.assign(result, {
-            interview_time: experience.interview_time,
-            interview_result: experience.interview_result,
-            overall_rating: experience.overall_rating,
-            salary: experience.salary,
-            interview_sensitive_questions:
-                experience.interview_sensitive_questions,
-            interview_qas: experience.interview_qas,
-        });
-    } else if (experience.type === "work") {
-        result = Object.assign(result, {
-            salary: experience.salary,
-            week_work_time: experience.week_work_time,
-            data_time: experience.data_time,
-            recommend_to_others: experience.recommend_to_others,
-        });
-    }
-
-    return result;
-}
 
 /* eslint-disable */
 /**
@@ -275,17 +260,17 @@ router.get("/:id", [
             throw new HttpError("the experience is hidden", 403);
         }
 
-        let result;
         if (user) {
             const like = await experience_like_model.getLikeByExperienceIdAndUser(
                 id_str,
                 user
             );
-            result = _generateGetExperienceViewModel(experience, user, like);
+            const result = experienceView(experience);
+            result.liked = !!like;
+            res.send(result);
         } else {
-            result = _generateGetExperienceViewModel(experience);
+            res.send(experienceView(experience));
         }
-        res.send(result);
     }),
 ]);
 
@@ -416,12 +401,12 @@ router.get(
                 ? limit
                 : shuffled_experiences.length;
 
-        res.send(
-            generateGetExperiencesViewModel(
-                shuffled_experiences.slice(0, length),
-                length
-            )
-        );
+        const maxLengthView = R.compose(experiencesView, R.take(length));
+
+        res.send({
+            experiences: maxLengthView(shuffled_experiences),
+            total: length,
+        });
     })
 );
 
