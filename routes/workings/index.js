@@ -7,6 +7,8 @@ const middleware = require("./middleware");
 const WorkingModel = require("../../models/working_model");
 const wrap = require("../../libs/wrap");
 const { HttpError, ObjectNotExistError } = require("../../libs/errors");
+const companiesSearchHandler = require("./companiesSearchHandler");
+const jobsSearchHandler = require("./jobsSearchHandler");
 
 const router = express.Router();
 
@@ -553,56 +555,7 @@ router.get(
  * @apiSuccess {String} ._id.id 公司統編 (有可能沒有)
  * @apiSuccess {String} ._id.name 公司名稱 (有可能是 Array)
  */
-router.get("/companies/search", (req, res, next) => {
-    const search = req.query.key || "";
-    const page = parseInt(req.query.page, 10) || 0;
-
-    if (search === "") {
-        next(new HttpError("key is required", 422));
-        return;
-    }
-
-    const collection = req.db.collection("workings");
-
-    collection
-        .aggregate([
-            {
-                $sort: {
-                    company: 1,
-                },
-            },
-            {
-                $match: {
-                    $or: [
-                        {
-                            "company.name": new RegExp(
-                                escapeRegExp(search.toUpperCase())
-                            ),
-                        },
-                        { "company.id": search },
-                    ],
-                },
-            },
-            {
-                $group: {
-                    _id: "$company",
-                },
-            },
-            {
-                $limit: 25 * page + 25,
-            },
-            {
-                $skip: 25 * page,
-            },
-        ])
-        .toArray()
-        .then(results => {
-            res.send(results);
-        })
-        .catch(err => {
-            next(new HttpError("Internal Server Error", 500));
-        });
-});
+router.get("/companies/search", companiesSearchHandler);
 
 /**
  * @api {get} /workings/jobs/search 搜尋工時資訊中的職稱
@@ -612,49 +565,7 @@ router.get("/companies/search", (req, res, next) => {
  * @apiSuccess {Object[]} .
  * @apiSuccess {String} ._id 職稱
  */
-router.get("/jobs/search", (req, res, next) => {
-    const search = req.query.key || "";
-    const page = parseInt(req.query.page, 10) || 0;
-
-    if (search === "") {
-        next(new HttpError("key is required", 422));
-        return;
-    }
-
-    const collection = req.db.collection("workings");
-
-    collection
-        .aggregate([
-            {
-                $sort: {
-                    job_title: 1,
-                },
-            },
-            {
-                $match: {
-                    job_title: new RegExp(escapeRegExp(search.toUpperCase())),
-                },
-            },
-            {
-                $group: {
-                    _id: "$job_title",
-                },
-            },
-            {
-                $limit: 25 * page + 25,
-            },
-            {
-                $skip: 25 * page,
-            },
-        ])
-        .toArray()
-        .then(results => {
-            res.send(results);
-        })
-        .catch(err => {
-            next(new HttpError("Internal Server Error", 500));
-        });
-});
+router.get("/jobs/search", jobsSearchHandler);
 
 function _isValidStatus(value) {
     const valid_status = ["published", "hidden"];
