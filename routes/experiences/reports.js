@@ -1,6 +1,7 @@
 const express = require("express");
 const passport = require("passport");
-const HttpError = require("../../libs/errors").HttpError;
+const R = require("ramda");
+const { HttpError } = require("../../libs/errors");
 
 const router = express.Router();
 const ReportModel = require("../../models/report_model");
@@ -34,24 +35,9 @@ function validatePostFields(body) {
     }
 }
 
-function _reportViewModel(report) {
-    let result = {
-        _id: report._id,
-        reason_category: report.reason_category,
-        created_at: report.created_at,
-    };
+const reportView = R.pick(["_id", "reason_category", "reason", "created_at"]);
 
-    if (report.reason) {
-        result = Object.assign(result, {
-            reason: report.reason,
-        });
-    }
-    return result;
-}
-
-function _reportsViewModel(reports) {
-    return reports.map(report => _reportViewModel(report));
-}
+const reportsView = R.map(reportView);
 
 /* eslint-disable */
 /**
@@ -88,7 +74,7 @@ router.post("/:id/reports", [
                 partial_report
             );
             const response = {
-                report: _reportViewModel(result),
+                report: reportView(result),
             };
             res.send(response);
         } catch (err) {
@@ -128,23 +114,15 @@ router.get("/:id/reports", [
 
         const report_model = new ReportModel(req.db);
 
-        try {
-            const reports = await report_model.getReportsByExperienceId(
-                experience_id_str,
-                start,
-                limit
-            );
+        const reports = await report_model.getReportsByExperienceId(
+            experience_id_str,
+            start,
+            limit
+        );
 
-            const result = {
-                reports: _reportsViewModel(reports),
-            };
-            res.send(result);
-        } catch (err) {
-            if (err instanceof ObjectNotExistError) {
-                throw new HttpError(err.message, 404);
-            }
-            throw err;
-        }
+        res.send({
+            reports: reportsView(reports),
+        });
     }),
 ]);
 
