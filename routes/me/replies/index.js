@@ -1,4 +1,5 @@
 const express = require("express");
+const R = require("ramda");
 
 const router = express.Router();
 const { HttpError } = require("../../../libs/errors");
@@ -11,30 +12,28 @@ const {
 const wrap = require("../../../libs/wrap");
 const passport = require("passport");
 
-function _generateGetReplyViewModel({
-    _id,
-    content,
-    like_count,
-    report_count,
-    created_at,
-    floor,
-    status,
-    experience,
-}) {
-    return {
-        _id,
-        content,
-        like_count,
-        report_count,
-        created_at,
-        floor,
-        status,
-        experience: {
-            _id: experience._id,
-            title: experience.title,
+const replyView = R.pick([
+    "_id",
+    "content",
+    "like_count",
+    "report_count",
+    "created_at",
+    "floor",
+    "status",
+]);
+
+const experienceView = R.pick(["_id", "title"]);
+
+// (replies, experiences) => view
+const repliesWithExperienceView = R.zipWith((reply, experience) =>
+    R.mergeAll([
+        replyView(reply),
+        // property experience
+        {
+            experience: experienceView(experience),
         },
-    };
-}
+    ])
+);
 
 /* eslint-disable */
 /**
@@ -94,11 +93,7 @@ router.get("/", [
 
         res.send({
             total,
-            replies: replies
-                .map((reply, i) =>
-                    Object.assign(reply, { experience: experiences[i] })
-                )
-                .map(_generateGetReplyViewModel),
+            replies: repliesWithExperienceView(replies, experiences),
         });
     }),
 ]);
