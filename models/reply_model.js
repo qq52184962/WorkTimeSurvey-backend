@@ -111,21 +111,15 @@ class ReplyModel {
             floor: 1,
         }
     ) {
-        const experience_model = new ExperienceModel(this._db);
-        return experience_model.isExist(experience_id).then(is_exist => {
-            if (!is_exist) {
-                throw new ObjectNotExistError("該篇文章不存在");
-            }
-            return this.collection
-                .find({
-                    experience_id: new ObjectId(experience_id),
-                    status: "published",
-                })
-                .sort(sort)
-                .skip(skip)
-                .limit(limit)
-                .toArray();
-        });
+        return this.collection
+            .find({
+                experience_id,
+                status: "published",
+            })
+            .sort(sort)
+            .skip(skip)
+            .limit(limit)
+            .toArray();
     }
 
     /**

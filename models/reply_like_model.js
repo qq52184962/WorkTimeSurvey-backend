@@ -53,6 +53,7 @@ class ReplyLikeModel {
     /**
      * Get replies likes
      * @param {array} ids - replies ids
+     * @param {User} user
      * @returns {Promise}
      *  - resolve : ReplyLike[]
      *  ReplyLike: {
@@ -64,12 +65,13 @@ class ReplyLikeModel {
      *     experience_id: ObjectId,
      *  }
      */
-    getReplyLikesByRepliesIds(ids) {
+    getReplyLikesByRepliesIdsAndUser(ids, user) {
         return this.collection
             .find({
                 reply_id: {
                     $in: ids,
                 },
+                user_id: user._id,
             })
             .toArray();
     }

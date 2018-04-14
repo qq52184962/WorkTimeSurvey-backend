@@ -1,5 +1,6 @@
 const express = require("express");
 const passport = require("passport");
+const R = require("ramda");
 
 const { ensureToObjectId } = require("../../models");
 const ExperienceModel = require("../../models/experience_model");
@@ -7,49 +8,16 @@ const ReplyModel = require("../../models/reply_model");
 const ReplyLikeModel = require("../../models/reply_like_model");
 const PopularExperienceLogsModel = require("../../models/popular_experience_logs_model");
 const { semiAuthentication } = require("../../middlewares/authentication");
-const { HttpError, ObjectNotExistError } = require("../../libs/errors");
+const { HttpError } = require("../../libs/errors");
 const {
     requiredNumberInRange,
     requiredNonEmptyString,
     stringRequireLength,
 } = require("../../libs/validation");
 const wrap = require("../../libs/wrap");
+const { combineSelector } = require("../../view_models/helper");
 
 const router = express.Router();
-
-function _isExistUserLiked(reply_id, user, likes) {
-    return likes.some(
-        like => like.reply_id.equals(reply_id) && like.user_id.equals(user._id)
-    );
-}
-
-function _createLikesField(replies, likes, user) {
-    if (!user) {
-        return;
-    }
-    replies.forEach(reply => {
-        // eslint-disable-next-line no-param-reassign
-        reply.liked = _isExistUserLiked(reply._id, user, likes);
-    });
-}
-
-function _generateGetRepliesViewModel(replies) {
-    const result = {
-        replies: [],
-    };
-    replies.forEach(reply => {
-        result.replies.push({
-            _id: reply._id,
-            content: reply.content,
-            like_count: reply.like_count,
-            report_count: reply.report_count,
-            liked: reply.liked,
-            created_at: reply.created_at,
-            floor: reply.floor,
-        });
-    });
-    return result;
-}
 
 const MAX_CONTENT_SIZE = 1000;
 
@@ -114,6 +82,17 @@ router.post("/:id/replies", [
     }),
 ]);
 
+const replyView = R.pick([
+    "_id",
+    "content",
+    "like_count",
+    "report_count",
+    "created_at",
+    "floor",
+]);
+
+const repliesView = R.map(replyView);
+
 /**
  * @api {get} /experiences/:id/replies 取得單篇經驗的留言列表 API
  * @apiGroup Experiences Replies
@@ -131,42 +110,53 @@ router.post("/:id/replies", [
 router.get("/:id/replies", [
     semiAuthentication("bearer", { session: false }),
     wrap(async (req, res, next) => {
-        const experience_id = req.params.id;
+        const experience_id_string = req.params.id;
         const limit = parseInt(req.query.limit, 10) || 20;
         const start = parseInt(req.query.start, 10) || 0;
-        let user;
 
         if (!requiredNumberInRange(limit, 1, 1000)) {
             throw new HttpError("limit 格式錯誤", 422);
         }
 
+        const experience_model = new ExperienceModel(req.db);
+        const reply_model = new ReplyModel(req.db);
+        const reply_like_model = new ReplyLikeModel(req.db);
+
+        const experience_id = ensureToObjectId(experience_id_string);
+        await experience_model.findOneOrFail(experience_id, { _id: 1 });
+
+        const replies = await reply_model.getPublishedRepliesByExperienceId(
+            experience_id,
+            start,
+            limit
+        );
+
         if (req.user) {
-            user = req.user;
-        }
+            const user = req.user;
 
-        try {
-            const reply_model = new ReplyModel(req.db);
-            const reply_like_model = new ReplyLikeModel(req.db);
-
-            const replies = await reply_model.getPublishedRepliesByExperienceId(
-                experience_id,
-                start,
-                limit
-            );
             const replies_ids = replies.map(reply => reply._id);
-            const likes = await reply_like_model.getReplyLikesByRepliesIds(
-                replies_ids
+            const likes = await reply_like_model.getReplyLikesByRepliesIdsAndUser(
+                replies_ids,
+                user
             );
-            _createLikesField(replies, likes, user);
 
-            res.send(_generateGetRepliesViewModel(replies));
-        } catch (err) {
-            if (err instanceof ObjectNotExistError) {
-                next(new HttpError(err.message, 404));
-            } else {
-                next(new HttpError("Internal Server Error", 500));
-            }
+            const likedSelector = reply => ({
+                liked: R.any(like => like.reply_id.equals(reply._id))(likes),
+            });
+            const repliesView = R.map(
+                combineSelector([replyView, likedSelector])
+            );
+
+            res.send({
+                replies: repliesView(replies),
+            });
+
+            return;
         }
+
+        res.send({
+            replies: repliesView(replies),
+        });
     }),
 ]);
 
