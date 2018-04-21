@@ -36,6 +36,7 @@ router.get(
             overtime_frequency: 1,
             salary: 1,
             estimated_hourly_wage: 1,
+            about_this_job: 1,
         };
 
         const data = {};
