@@ -98,6 +98,15 @@ app.use((err, req, res, next) => {
 // will print stacktrace
 if (app.get("env") === "development") {
     app.use((err, req, res, next) => {
+        if (err instanceof HttpError) {
+            winston.warn(req.originalUrl, {
+                ip: req.ip,
+                ips: req.ips,
+                message: err.message,
+                error: err,
+            });
+        }
+
         res.status(err.status || 500);
         res.send({
             message: err.message,
