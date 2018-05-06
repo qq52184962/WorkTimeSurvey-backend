@@ -27,6 +27,5 @@ install:
     - ./bin/migrate
 
 script:
-    - npm run test:coverage -- --timeout 30s
-    - npm run coveralls || /bin/true
+    - npm run test -- --timeout 30s
     - npm run lint
