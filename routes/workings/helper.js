@@ -73,8 +73,7 @@ function calculateEstimatedHourlyWage(working) {
     } else if (working.day_real_work_time && working.week_work_time) {
         if (working.salary.type === "month") {
             estimated_hourly_wage =
-                working.salary.amount *
-                12 /
+                (working.salary.amount * 12) /
                 (52 * working.week_work_time -
                     (12 + 7) * working.day_real_work_time);
         } else if (working.salary.type === "year") {

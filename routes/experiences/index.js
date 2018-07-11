@@ -401,7 +401,10 @@ router.get(
                 ? limit
                 : shuffled_experiences.length;
 
-        const maxLengthView = R.compose(experiencesView, R.take(length));
+        const maxLengthView = R.compose(
+            experiencesView,
+            R.take(length)
+        );
 
         res.send({
             experiences: maxLengthView(shuffled_experiences),
