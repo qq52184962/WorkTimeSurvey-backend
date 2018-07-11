@@ -1,7 +1,6 @@
 const { assert } = require("chai");
 const request = require("supertest");
-const { MongoClient } = require("mongodb");
-const config = require("config");
+const { connectMongo } = require("../../models/connect");
 
 const app = require("../../app");
 const create_capped_collection = require("../../database/migrations/create-jobTitleKeywords-collection");
@@ -9,11 +8,9 @@ const create_capped_collection = require("../../database/migrations/create-jobTi
 describe("job_title_keywords", () => {
     let db;
 
-    before(() =>
-        MongoClient.connect(config.get("MONGODB_URI")).then(_db => {
-            db = _db;
-        })
-    );
+    before(async () => {
+        ({ db } = await connectMongo());
+    });
 
     describe("company", () => {
         before(() =>
