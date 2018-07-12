@@ -15,7 +15,9 @@ describe("job_title_keywords", () => {
         })
     );
 
-    describe("company", () => {
+    describe("GET /job_title_keywords", () => {
+        const path = "/job_title_keywords";
+
         before(() =>
             db
                 .collection("job_title_keywords")
@@ -34,7 +36,7 @@ describe("job_title_keywords", () => {
 
         it("will return keywords in order", () =>
             request(app)
-                .get("/job_title_keywords")
+                .get(path)
                 .query({ num: "2" })
                 .expect(200)
                 .expect(res => {
@@ -46,25 +48,25 @@ describe("job_title_keywords", () => {
 
         it("number should be 1~20", () =>
             request(app)
-                .get("/job_title_keywords")
+                .get(path)
                 .query({ num: "0" })
                 .expect(422));
 
         it("number should be 1~20", () =>
             request(app)
-                .get("/job_title_keywords")
+                .get(path)
                 .query({ num: "100" })
                 .expect(422));
 
         it("num should be integer number", () =>
             request(app)
-                .get("/job_title_keywords")
+                .get(path)
                 .query({ num: "10.5" })
                 .expect(422));
 
         it("number default will be 5", () =>
             request(app)
-                .get("/job_title_keywords")
+                .get(path)
                 .expect(200)
                 .expect(res => {
                     assert.isArray(res.body.keywords);

@@ -15,7 +15,9 @@ describe("company_keywords", () => {
         })
     );
 
-    describe("company", () => {
+    describe("GET /company_keywords", () => {
+        const path = "/company_keywords";
+
         before(() =>
             db
                 .collection("company_keywords")
@@ -32,39 +34,38 @@ describe("company_keywords", () => {
                 ])
         );
 
-        it("will return keywords in order", () =>
-            request(app)
-                .get("/company_keywords")
+        it("will return keywords in order", async () => {
+            const res = await request(app)
+                .get(path)
                 .query({ num: "2" })
-                .expect(200)
-                .expect(res => {
-                    assert.isArray(res.body.keywords);
-                    assert.equal(res.body.keywords.length, 2);
-                    assert.equal(res.body.keywords[0], "GoodJob");
-                    assert.equal(res.body.keywords[1], "GoodJob2");
-                }));
+                .expect(200);
+            assert.isArray(res.body.keywords);
+            assert.equal(res.body.keywords.length, 2);
+            assert.equal(res.body.keywords[0], "GoodJob");
+            assert.equal(res.body.keywords[1], "GoodJob2");
+        });
 
         it("number should be 1~20", () =>
             request(app)
-                .get("/company_keywords")
+                .get(path)
                 .query({ num: "0" })
                 .expect(422));
 
         it("number should be 1~20", () =>
             request(app)
-                .get("/company_keywords")
+                .get(path)
                 .query({ num: "100" })
                 .expect(422));
 
         it("num should be integer number", () =>
             request(app)
-                .get("/company_keywords")
+                .get(path)
                 .query({ num: "10.5" })
                 .expect(422));
 
         it("number default will be 5", () =>
             request(app)
-                .get("/company_keywords")
+                .get(path)
                 .expect(200)
                 .expect(res => {
                     assert.isArray(res.body.keywords);
