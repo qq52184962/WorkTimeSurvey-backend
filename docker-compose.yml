@@ -10,7 +10,7 @@ services:
       - mongo:mongo
       - redis:redis
     working_dir: /app
-    command: npm start
+    command: npm run dev
     environment:
       - MONGODB_URI=mongodb://mongo/goodjob
       - REDIS_URL=redis://redis

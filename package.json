@@ -4,6 +4,7 @@
   "description": "GoodJob",
   "scripts": {
     "start": "node ./bin/www",
+    "dev": "nodemon ./bin/www",
     "test": "mocha --recursive libs routes test middlewares models database",
     "lint": "eslint \"./**/*.js\"",
     "lint:fix": "npm run lint -- --fix",
@@ -49,6 +50,7 @@
     "lint-staged": "^7.2.0",
     "mocha": "^3.5.0",
     "nock": "^8.0.0",
+    "nodemon": "^1.18.1",
     "prettier": "^1.13.7",
     "sinon": "^2.4.0",
     "supertest": "^3.0.0"
