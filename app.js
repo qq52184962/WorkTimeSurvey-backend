@@ -12,6 +12,7 @@ require("winston-mongodb").MongoDB;
 const passport = require("passport");
 const passportStrategies = require("./libs/passport-strategies");
 
+const ModelManager = require("./models/manager");
 const routes = require("./routes");
 
 const app = express();
@@ -41,6 +42,10 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(expressMongoDb(config.get("MONGODB_URI")));
 app.use(require("./middlewares").expressRedisDb(config.get("REDIS_URL")));
+app.use((req, res, next) => {
+    req.manager = new ModelManager(req.db);
+    next();
+});
 
 if (config.get("CORS_ANY") === "TRUE") {
     app.use(cors());
