@@ -894,37 +894,35 @@ describe("Experiences 面試和工作經驗資訊", () => {
             experience_id_str = result.insertedIds[num_of_data - 1]; // like_count of that experience is num_of_data
         });
 
-        it("should return 10 recommended experiences, and query experience_id should be excluded", () =>
-            request(app)
+        it("should return 10 recommended experiences, and query experience_id should be excluded", async () => {
+            const res = await request(app)
                 .get(`/experiences/${experience_id_str}/recommended`)
-                .expect(200)
-                .expect(res => {
-                    assert.propertyVal(res.body, "total", 10);
-                    assert.property(res.body, "experiences");
-                    assert.lengthOf(res.body.experiences, 10);
-                    const largest_like_count = num_of_data - 20;
-                    for (let i = 0; i < 10; i += 1) {
-                        assert.isAbove(
-                            res.body.experiences[i].like_count,
-                            largest_like_count,
-                            "like_count is greater than 30"
-                        );
-                    }
-                }));
+                .expect(200);
+            assert.propertyVal(res.body, "total", 10);
+            assert.property(res.body, "experiences");
+            assert.lengthOf(res.body.experiences, 10);
+            const largest_like_count = num_of_data - 20;
+            for (let i = 0; i < 10; i += 1) {
+                assert.isAbove(
+                    res.body.experiences[i].like_count,
+                    largest_like_count,
+                    "like_count is greater than 30"
+                );
+            }
+        });
 
-        it("the query experience_id should be excluded (although this test is random)", () =>
-            request(app)
+        it("the query experience_id should be excluded (although this test is random)", async () => {
+            const res = await request(app)
                 .get(`/experiences/${experience_id_str}/recommended`)
-                .expect(200)
-                .expect(res => {
-                    for (let i = 0; i < 10; i += 1) {
-                        assert.notEqual(
-                            res.body.experiences[i].like_count,
-                            num_of_data,
-                            `like_count shouldn't be ${num_of_data} since the experience should be excluded`
-                        );
-                    }
-                }));
+                .expect(200);
+            for (let i = 0; i < 10; i += 1) {
+                assert.notEqual(
+                    res.body.experiences[i].like_count,
+                    num_of_data,
+                    `like_count shouldn't be ${num_of_data} since the experience should be excluded`
+                );
+            }
+        });
 
         it("should return correct fields if success", () =>
             request(app)
