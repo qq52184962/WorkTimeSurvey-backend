@@ -10,4 +10,9 @@ const Mutation = `
   }
 `;
 
-module.exports = [Query, Mutation];
+module.exports = [
+    Query,
+    Mutation,
+    ...require("./company_keywords").types,
+    ...require("./job_title_keywords").types,
+];
