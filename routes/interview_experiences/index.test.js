@@ -5,10 +5,9 @@ chai.use(chaiAsPromised);
 const assert = chai.assert;
 const request = require("supertest");
 const app = require("../../app");
-const MongoClient = require("mongodb").MongoClient;
+const { connectMongo } = require("../../models/connect");
 const ObjectId = require("mongodb").ObjectId;
 const sinon = require("sinon");
-const config = require("config");
 const authentication = require("../../libs/authentication");
 
 function generateInterviewExperiencePayload(options) {
@@ -75,11 +74,9 @@ describe("experiences 面試和工作經驗資訊", () => {
         },
     };
 
-    before("DB: Setup", () =>
-        MongoClient.connect(config.get("MONGODB_URI")).then(_db => {
-            db = _db;
-        })
-    );
+    before(async () => {
+        ({ db } = await connectMongo());
+    });
 
     describe("POST /interview_experiences", () => {
         let sandbox;

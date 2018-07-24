@@ -1,37 +1,35 @@
 const { assert } = require("chai");
 const request = require("supertest");
-const { MongoClient } = require("mongodb");
-const config = require("config");
+const { connectMongo } = require("../../models/connect");
+const ModelManager = require("../../models/manager");
 
 const app = require("../../app");
 const create_capped_collection = require("../../database/migrations/create-jobTitleKeywords-collection");
 
 describe("job_title_keywords", () => {
     let db;
+    let manager;
 
-    before(() =>
-        MongoClient.connect(config.get("MONGODB_URI")).then(_db => {
-            db = _db;
-        })
-    );
+    before(async () => {
+        ({ db } = await connectMongo());
+        manager = new ModelManager(db);
+    });
 
     describe("GET /job_title_keywords", () => {
         const path = "/job_title_keywords";
 
         before(() =>
-            db
-                .collection("job_title_keywords")
-                .insertMany([
-                    { word: "GoodJob" },
-                    { word: "GoodJob" },
-                    { word: "GoodJob" },
-                    { word: "GoodJob2" },
-                    { word: "GoodJob2" },
-                    { word: "GoodJob3" },
-                    { word: "GoodJob4" },
-                    { word: "GoodJob5" },
-                    { word: "GoodJob6" },
-                ])
+            manager.JobTitleKeywordModel.collection.insertMany([
+                { word: "GoodJob" },
+                { word: "GoodJob" },
+                { word: "GoodJob" },
+                { word: "GoodJob2" },
+                { word: "GoodJob2" },
+                { word: "GoodJob3" },
+                { word: "GoodJob4" },
+                { word: "GoodJob5" },
+                { word: "GoodJob6" },
+            ])
         );
 
         it("will return keywords in order", () =>
@@ -73,11 +71,9 @@ describe("job_title_keywords", () => {
                     assert.lengthOf(res.body.keywords, 5);
                 }));
 
-        after(() =>
-            db
-                .collection("job_title_keywords")
-                .drop()
-                .then(() => create_capped_collection(db))
-        );
+        after(async () => {
+            await manager.JobTitleKeywordModel.collection.drop();
+            await create_capped_collection(db);
+        });
     });
 });

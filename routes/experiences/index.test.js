@@ -4,8 +4,8 @@ chai.use(require("chai-datetime"));
 const assert = chai.assert;
 const request = require("supertest");
 const app = require("../../app");
-const { MongoClient, ObjectId } = require("mongodb");
-const config = require("config");
+const { ObjectId } = require("mongodb");
+const { connectMongo } = require("../../models/connect");
 const sinon = require("sinon");
 const authentication = require("../../libs/authentication");
 const {
@@ -19,11 +19,9 @@ const create_title_keyword_collection = require("../../database/migrations/creat
 describe("Experiences 面試和工作經驗資訊", () => {
     let db;
 
-    before("DB: Setup", () =>
-        MongoClient.connect(config.get("MONGODB_URI")).then(_db => {
-            db = _db;
-        })
-    );
+    before(async () => {
+        ({ db } = await connectMongo());
+    });
 
     describe("GET /experiences/:id", () => {
         let interview_experience_id_str = null;

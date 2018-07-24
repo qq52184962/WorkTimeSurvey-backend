@@ -1,8 +1,8 @@
 const { assert } = require("chai");
 const request = require("supertest");
-const { MongoClient, ObjectId } = require("mongodb");
+const { ObjectId } = require("mongodb");
+const { connectMongo } = require("../../models/connect");
 const sinon = require("sinon");
-const config = require("config");
 
 const app = require("../../app");
 const authentication = require("../../libs/authentication");
@@ -28,11 +28,9 @@ describe("Replies Test", () => {
         },
     };
 
-    before("DB: Setup", () =>
-        MongoClient.connect(config.get("MONGODB_URI")).then(_db => {
-            db = _db;
-        })
-    );
+    before(async () => {
+        ({ db } = await connectMongo());
+    });
 
     describe("POST /experiences/:id/replies", () => {
         let experience_id;
