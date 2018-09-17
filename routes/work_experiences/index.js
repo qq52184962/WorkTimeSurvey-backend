@@ -304,9 +304,10 @@ router.post("/", [
         Object.assign(experience, pickupWorkExperience(req.body));
 
         const experience_model = new ExperienceModel(req.db);
+        const company_model = req.manager.CompanyModel;
 
         const company = await helper.getCompanyByIdOrQuery(
-            req.db,
+            company_model,
             req.body.company_id,
             req.body.company_query
         );
