@@ -29,6 +29,7 @@ const { experienceView } = require("../../view_models/get_experience");
 function _queryToDBQuery(search_query, search_by, type) {
     const query = {
         status: "published",
+        "archive.is_archived": false,
     };
 
     if (search_by === "job_title") {
@@ -152,6 +153,9 @@ function validateGetExperiencesInput(req) {
  * @apiSuccess (work) {Object} [experiences.salary] 工作薪資
  * @apiSuccess (work) {String="year","month","day","hour"} experiences.salary.type 工作薪資種類 (工作薪資存在的話，一定有此欄位)
  * @apiSuccess (work) {Number} experiences.salary.amount 工作薪資金額 (工作薪資存在的話，一定有此欄位)
+ * @apiSuccess {Object}  experiences.archive 封存
+ * @apiSuccess {String}  experiences.archive.reason 封存理由
+ * @apiSuccess {Boolean}  experiences.archive.is_achived 是否封存
  */
 /* eslint-enable */
 router.get(
@@ -192,6 +196,8 @@ router.get(
         });
     })
 );
+
+const isExperienceArchived = R.path(["archive", "is_archived"]);
 
 /* eslint-disable */
 /**
@@ -254,7 +260,10 @@ router.get("/:id", [
         const experience_id = ensureToObjectId(id_str);
         const experience = await experience_model.findOneOrFail(experience_id);
 
-        if (experience.status === "hidden") {
+        if (
+            experience.status === "hidden" ||
+            isExperienceArchived(experience)
+        ) {
             throw new HttpError("the experience is hidden", 403);
         }
 
@@ -365,6 +374,9 @@ function shuffle(array) {
  * @apiSuccess (work) {Object} [experiences.salary] 工作薪資
  * @apiSuccess (work) {String="year","month","day","hour"} experiences.salary.type 工作薪資種類 (工作薪資存在的話，一定有此欄位)
  * @apiSuccess (work) {Number} experiences.salary.amount 工作薪資金額 (工作薪資存在的話，一定有此欄位)
+ * @apiSuccess {Object}  experiences.archive 封存
+ * @apiSuccess {String}  experiences.archive.reason 封存理由
+ * @apiSuccess {Boolean}  experiences.archive.is_achived 是否封存
  */
 /* eslint-enable */
 router.get(
@@ -377,7 +389,7 @@ router.get(
             throw new HttpError("limit 格式錯誤", 422);
         }
 
-        const query = { status: "published" };
+        const query = { status: "published", "archive.is_archived": false };
         const sort = { like_count: -1 };
 
         const experience_model = new ExperienceModel(req.db);
