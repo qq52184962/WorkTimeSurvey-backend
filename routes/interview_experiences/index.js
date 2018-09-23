@@ -160,8 +160,8 @@ function validateInterviewInputFields(data) {
     if (!requiredNonEmptyString(data.interview_result)) {
         throw new HttpError("面試結果要填喔！", 422);
     }
-    if (!stringRequireLength(data.interview_result, 1, 10)) {
-        throw new HttpError("面試結果僅限 1~10 字！", 422);
+    if (!stringRequireLength(data.interview_result, 1, 100)) {
+        throw new HttpError("面試結果僅限 1~100 字！", 422);
     }
 
     // interview_sensitive_questions
@@ -294,7 +294,7 @@ function validationInputFields(data) {
  * @apiParam {Object} interview_time 面試時間
  * @apiParam {Number="整數, N >= current_year - 10"} interview_time.year 面試時間的年份
  * @apiParam {Number="1,2,3...12"} interview_time.month 面試時間的月份
- * @apiParam {String="錄取,未錄取,沒通知,或其他 0 < length <= 10 的字串"} interview_result 面試結果
+ * @apiParam {String="錄取,未錄取,沒通知,或其他 0 < length <= 100 的字串"} interview_result 面試結果
  * @apiParam {Object} [salary] 面談薪資
  * @apiParam {String="year","month","day","hour"} salary.type 面談薪資種類 (若有上傳面談薪資欄位，本欄必填)
  * @apiParam {Number="整數, >= 0"} salary.amount 面談薪資金額 (若有上傳面談薪資欄位，本欄必填)
