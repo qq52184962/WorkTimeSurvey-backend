@@ -75,6 +75,9 @@ jobs:
             - run:
                 name: Build Docker Image
                 command: docker-compose -f .circleci/docker-compose.yml build
+            - run:
+                name: Login docker registry
+                command: docker login reg.goodjob.life -u ${DOCKER_REGISTRY_USER} -p ${DOCKER_REGISTRY_PASSWORD}
             - deploy:
                 name: Deploy docker image
                 command: |
