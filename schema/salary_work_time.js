@@ -7,13 +7,8 @@ const Type = gql`
         job_title: JobTitle!
         day_promised_work_time: Float
         day_real_work_time: Float
-        email: String
         employment_type: EmploymentType
         experience_in_year: Int
-        gender: Gender
-        has_compensatory_dayoff: YesNoOrUnknown
-        has_overtime_salary: YesNoOrUnknown
-        is_overtime_salary_legal: YesNoOrUnknown
         overtime_frequency: Int
         salary: Salary
         sector: String
