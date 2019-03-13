@@ -14,7 +14,7 @@ const Type = gql`
 const Query = gql`
     extend type Query {
         search_job_titles(query: String!): [JobTitle!]!
-        job_title(name: String!): JobTitle!
+        job_title(name: String!): JobTitle
     }
 `;
 
@@ -47,6 +47,10 @@ const resolvers = {
                 "archive.is_archived": false,
                 job_title: name,
             });
+
+            if (!result) {
+                return null;
+            }
 
             return {
                 name: result.job_title,

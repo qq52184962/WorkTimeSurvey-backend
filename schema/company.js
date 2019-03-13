@@ -14,6 +14,7 @@ const Type = gql`
 const Query = gql`
     extend type Query {
         search_companies(query: String!): [Company!]!
+        company(name: String!): Company
     }
 `;
 
@@ -54,26 +55,36 @@ const resolvers = {
 
             return results;
         },
+
+        company: async (_, { name }, ctx) => {
+            const collection = ctx.db.collection("workings");
+
+            // FIXME: should query from collection `companies`
+            const result = await collection.findOne({
+                status: "published",
+                "archive.is_archived": false,
+                "company.name": name,
+            });
+
+            if (!result) {
+                return null;
+            }
+
+            return {
+                name: result.company.name,
+            };
+        },
     },
     Company: {
         salary_work_times: async (company, _, ctx) => {
             const collection = ctx.db.collection("workings");
 
             const salaryWorkTimes = await collection
-                .aggregate([
-                    {
-                        $match: {
-                            status: "published",
-                            "archive.is_archived": false,
-                            "company.name": company.name,
-                        },
-                    },
-                    {
-                        $addFields: {
-                            id: "$_id",
-                        },
-                    },
-                ])
+                .find({
+                    status: "published",
+                    "archive.is_archived": false,
+                    "company.name": company.name,
+                })
                 .toArray();
 
             return salaryWorkTimes;
