@@ -1,4 +1,5 @@
 const { gql, UserInputError } = require("apollo-server-express");
+const R = require("ramda");
 const WorkingModel = require("../models/working_model");
 const {
     requiredNumberInRange,
@@ -25,8 +26,8 @@ const Type = gql`
 
     type SalaryWorkTimeStatistics {
         count: Int!
-        average_week_work_time: Float!
-        average_estimated_hourly_wage: Float!
+        average_week_work_time: Float
+        average_estimated_hourly_wage: Float
         has_compensatory_dayoff_count: YesNoOrUnknownCount
         has_overtime_salary_count: YesNoOrUnknownCount
         is_overtime_salary_legal_count: YesNoOrUnknownCount
@@ -119,6 +120,76 @@ const resolvers = {
         job_title: salaryWorkTime => {
             return {
                 name: salaryWorkTime.job_title,
+            };
+        },
+    },
+    SalaryWorkTimeStatistics: {
+        count: salary_work_times => salary_work_times.length,
+        average_week_work_time: salary_work_times => {
+            const target = R.pipe(
+                R.map(R.prop("week_work_time")),
+                R.filter(x => typeof x === "number")
+            )(salary_work_times);
+
+            if (target.length > 0) {
+                return R.sum(target) / target.length;
+            }
+            return null;
+        },
+        average_estimated_hourly_wage: salary_work_times => {
+            const target = R.pipe(
+                R.map(R.prop("estimated_hourly_wage")),
+                R.filter(x => typeof x === "number")
+            )(salary_work_times);
+
+            if (target.length > 0) {
+                return R.sum(target) / target.length;
+            }
+            return null;
+        },
+        has_compensatory_dayoff_count: salary_work_times => {
+            if (salary_work_times.length < 5) {
+                return null;
+            }
+
+            const counts = R.countBy(R.prop("has_compensatory_dayoff"))(
+                salary_work_times
+            );
+
+            return {
+                yes: counts["yes"] || 0,
+                no: counts["no"] || 0,
+                unknown: counts["don't know"] || 0,
+            };
+        },
+        has_overtime_salary_count: salary_work_times => {
+            if (salary_work_times.length < 5) {
+                return null;
+            }
+
+            const counts = R.countBy(R.prop("has_overtime_salary"))(
+                salary_work_times
+            );
+
+            return {
+                yes: counts["yes"] || 0,
+                no: counts["no"] || 0,
+                unknown: counts["don't know"] || 0,
+            };
+        },
+        is_overtime_salary_legal_count: salary_work_times => {
+            if (salary_work_times.length < 5) {
+                return null;
+            }
+
+            const counts = R.countBy(R.prop("is_overtime_salary_legal"))(
+                salary_work_times
+            );
+
+            return {
+                yes: counts["yes"] || 0,
+                no: counts["no"] || 0,
+                unknown: counts["don't know"] || 0,
             };
         },
     },
