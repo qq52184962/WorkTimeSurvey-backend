@@ -28,6 +28,7 @@ class UserModel {
             facebook_id,
             facebook,
             email,
+            email_status: "UNVERIFIED",
         };
 
         await this.collection.insertOne(new_user);
@@ -36,3 +37,6 @@ class UserModel {
 }
 
 module.exports = UserModel;
+module.exports.UNVERIFIED = "UNVERIFIED";
+module.exports.SENT_VERIFICATION_LINK = "SENT_VERIFICATION_LINK";
+module.exports.VERIFIED = "VERIFIED";

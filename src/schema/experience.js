@@ -16,13 +16,16 @@ const Type = gql`
         education: String
         salary: Salary
         title: String
-        sections: [Section]!
+        sections: [Section!]!
         created_at: Date!
         reply_count: Int!
         report_count: Int!
         like_count: Int!
         status: PublishStatus!
         archive: Archive!
+
+        "使用者是否按贊 (null 代表未傳入驗證資訊)"
+        liked: Boolean
     }
 
     type WorkExperience implements Experience {
@@ -35,13 +38,16 @@ const Type = gql`
         education: String
         salary: Salary
         title: String
-        sections: [Section]!
+        sections: [Section!]!
         created_at: Date!
         reply_count: Int!
         report_count: Int!
         like_count: Int!
         status: PublishStatus!
         archive: Archive!
+
+        "使用者是否按贊 (null 代表未傳入驗證資訊)"
+        liked: Boolean
 
         "work experience specific fields"
         data_time: YearMonth
@@ -64,7 +70,7 @@ const Type = gql`
         education: String
         salary: Salary
         title: String
-        sections: [Section]!
+        sections: [Section!]!
         created_at: Date!
         reply_count: Int!
         report_count: Int!
@@ -72,12 +78,15 @@ const Type = gql`
         status: PublishStatus!
         archive: Archive!
 
+        "使用者是否按贊 (null 代表未傳入驗證資訊)"
+        liked: Boolean
+
         "interview experience specific fields"
         interview_time: YearMonth!
         interview_result: String!
         overall_rating: Int!
-        interview_qas: [InterviewQuestion]
-        interview_sensitive_questions: [String]
+        interview_qas: [InterviewQuestion!]
+        interview_sensitive_questions: [String!]
     }
 
     type InterviewExperienceStatistics {
@@ -112,6 +121,22 @@ const Query = gql`
 const Mutation = `
 `;
 
+const ExperienceLikedResolver = async (experience, args, { manager, user }) => {
+    if (!user) {
+        return null;
+    }
+
+    const like = await manager.ExperienceLikeModel.getLikeByExperienceAndUser(
+        experience._id,
+        user
+    );
+
+    if (like) {
+        return true;
+    }
+    return false;
+};
+
 const resolvers = {
     Experience: {
         __resolveType(experience) {
@@ -130,9 +155,17 @@ const resolvers = {
     },
     WorkExperience: {
         id: experience => experience._id,
+        job_title: experience => ({
+            name: experience.job_title,
+        }),
+        liked: ExperienceLikedResolver,
     },
     InterviewExperience: {
         id: experience => experience._id,
+        job_title: experience => ({
+            name: experience.job_title,
+        }),
+        liked: ExperienceLikedResolver,
     },
     Query: {
         async experience(_, { id }, ctx) {

@@ -18,7 +18,6 @@ const Type = gql`
 const Query = gql`
     type Query {
         placeholder: Boolean # For Schema Composition
-        salary_work_time_count: Int!
         work_experience_count: Int!
         interview_experience_count: Int!
     }
@@ -40,8 +39,10 @@ module.exports = [
     ...require("./experience").types,
     ...require("./job_title_keyword").types,
     ...require("./job_title").types,
+    ...require("./labor_right").types,
     ...require("./me").types,
     ...require("./reply").types,
     ...require("./salary_work_time").types,
     ...require("./user").types,
+    ...require("./verify_email").types,
 ];

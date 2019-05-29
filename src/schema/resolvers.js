@@ -8,8 +8,10 @@ module.exports = merge([
     require("./experience").resolvers,
     require("./job_title_keyword").resolvers,
     require("./job_title").resolvers,
+    require("./labor_right").resolvers,
     require("./me").resolvers,
     require("./reply").resolvers,
     require("./salary_work_time").resolvers,
     require("./user").resolvers,
+    require("./verify_email").resolvers,
 ]);
