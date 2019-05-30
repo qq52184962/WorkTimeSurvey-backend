@@ -6,9 +6,6 @@ services:
       - ./:/app
     ports:
       - "12000:3000"
-    links:
-      - mongo:mongo
-      - redis:redis
     working_dir: /app
     command: npm run dev
     environment:
@@ -16,8 +13,8 @@ services:
       - MONGODB_DBNAME=goodjob
       - REDIS_URL=redis://redis
       - NODE_ENV=development
-      - JWT_SECRET=DontUseMe
+    # other variables, use .env
   mongo:
-    image: mongo
+    image: mongo:3.6
   redis:
     image: redis
