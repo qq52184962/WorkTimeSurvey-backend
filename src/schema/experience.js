@@ -141,6 +141,10 @@ const Query = gql`
     extend type Query {
         "取得單篇經驗分享"
         experience(id: ID!): Experience
+        popular_experiences(
+            returnNumber: Int = 3
+            sampleNumber: Int = 20
+        ): [Experience!]!
     }
 `;
 
@@ -215,6 +219,58 @@ const resolvers = {
             } else {
                 return result;
             }
+        },
+
+        async popular_experiences(_, args, ctx) {
+            const collection = ctx.db.collection("experiences");
+            const { returnNumber, sampleNumber } = args;
+
+            const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+            const result = await collection
+                .aggregate([
+                    {
+                        $match: {
+                            created_at: {
+                                $gte: new Date(new Date() - thirtyDays),
+                            },
+                        },
+                    },
+                    {
+                        $addFields: {
+                            contentsLength: {
+                                $strLenCP: {
+                                    $reduce: {
+                                        input: "$sections",
+                                        initialValue: "1",
+                                        in: {
+                                            $concat: [
+                                                "$$value",
+                                                "$$this.content",
+                                            ],
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    {
+                        $sort: {
+                            contentsLength: -1,
+                        },
+                    },
+                    {
+                        $limit: sampleNumber,
+                    },
+                    {
+                        $sample: {
+                            size: returnNumber,
+                        },
+                    },
+                ])
+                .toArray();
+
+            return result;
         },
     },
 };
