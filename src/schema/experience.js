@@ -1,10 +1,13 @@
 const { gql, UserInputError } = require("apollo-server-express");
 const ObjectId = require("mongodb").ObjectId;
+const R = require("ramda");
 const { requiredNumberInRange } = require("../libs/validation");
 
 const WorkExperienceType = "work";
 const InterviewExperienceType = "interview";
 const InternExperienceType = "intern";
+
+const MAX_PREVIEW_SIZE = 160;
 
 const Type = gql`
     interface Experience {
@@ -27,6 +30,9 @@ const Type = gql`
 
         "使用者是否按贊 (null 代表未傳入驗證資訊)"
         liked: Boolean
+
+        "preview，通常是列表時可以用來簡單預覽內容"
+        preview: String
     }
 
     type WorkExperience implements Experience {
@@ -49,6 +55,9 @@ const Type = gql`
 
         "使用者是否按贊 (null 代表未傳入驗證資訊)"
         liked: Boolean
+
+        "preview，通常是列表時可以用來簡單預覽內容"
+        preview: String
 
         "work experience specific fields"
         data_time: YearMonth
@@ -81,6 +90,9 @@ const Type = gql`
 
         "使用者是否按贊 (null 代表未傳入驗證資訊)"
         liked: Boolean
+
+        "preview，通常是列表時可以用來簡單預覽內容"
+        preview: String
 
         "interview experience specific fields"
         interview_time: YearMonth!
@@ -115,6 +127,9 @@ const Type = gql`
 
         "使用者是否按贊 (null 代表未傳入驗證資訊)"
         liked: Boolean
+
+        "preview，通常是列表時可以用來簡單預覽內容"
+        preview: String
 
         "intern experience specific fields"
         starting_year: Int
@@ -169,6 +184,14 @@ const ExperienceLikedResolver = async (experience, args, { manager, user }) => {
     return false;
 };
 
+const ExperiencePreviewResolver = experience => {
+    const section = R.head(experience.sections);
+    if (!section) {
+        return null;
+    }
+    return section.content.substring(0, MAX_PREVIEW_SIZE);
+};
+
 const resolvers = {
     Experience: {
         __resolveType(experience) {
@@ -190,6 +213,7 @@ const resolvers = {
             name: experience.job_title,
         }),
         liked: ExperienceLikedResolver,
+        preview: ExperiencePreviewResolver,
     },
     InterviewExperience: {
         id: experience => experience._id,
@@ -197,6 +221,7 @@ const resolvers = {
             name: experience.job_title,
         }),
         liked: ExperienceLikedResolver,
+        preview: ExperiencePreviewResolver,
     },
     InternExperience: {
         id: experience => experience._id,
@@ -204,6 +229,7 @@ const resolvers = {
             name: experience.job_title,
         }),
         liked: ExperienceLikedResolver,
+        preview: ExperiencePreviewResolver,
         region: experience => experience.region || "",
     },
     Query: {
