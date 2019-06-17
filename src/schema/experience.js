@@ -1,5 +1,6 @@
-const { gql } = require("apollo-server-express");
+const { gql, UserInputError } = require("apollo-server-express");
 const ObjectId = require("mongodb").ObjectId;
+const { requiredNumberInRange } = require("../libs/validation");
 
 const WorkExperienceType = "work";
 const InterviewExperienceType = "interview";
@@ -142,6 +143,7 @@ const Query = gql`
         "取得單篇經驗分享"
         experience(id: ID!): Experience
         popular_experiences(
+            "返回的資料筆數，須 <= 20"
             returnNumber: Int = 3
             sampleNumber: Int = 20
         ): [Experience!]!
@@ -221,9 +223,12 @@ const resolvers = {
             }
         },
 
-        async popular_experiences(_, args, ctx) {
+        async popular_experiences(_, { returnNumber, sampleNumber }, ctx) {
+            if (!requiredNumberInRange(returnNumber, 0, 20)) {
+                throw new UserInputError("returnNumber 必須是 0 ~ 20");
+            }
+
             const collection = ctx.db.collection("experiences");
-            const { returnNumber, sampleNumber } = args;
 
             const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
@@ -234,6 +239,8 @@ const resolvers = {
                             created_at: {
                                 $gte: new Date(new Date() - thirtyDays),
                             },
+                            status: "published",
+                            "archive.is_archived": false,
                         },
                     },
                     {
