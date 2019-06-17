@@ -11,7 +11,7 @@ GoodJob 好工作評論網 後端網站 API
 立刻前往 --> https://www.goodjob.life
 
 * Environment: nodejs 8
-* DB: mongodb >= 3.2, redis
+* DB: mongodb >= 3.6, redis
 
 ## Contirbution
 
