@@ -5,6 +5,7 @@ const JobTitleKeywordModel = require("./job_title_keyword_model");
 const SalaryWorkTimeModel = require("./salary_work_time_model");
 const UserModel = require("./user_model");
 const ViewLogModel = require("./view_log_model");
+const ExperienceModel = require("./experience_model_v2");
 
 class ModelManager {
     constructor(db) {
@@ -40,6 +41,30 @@ class ModelManager {
 
     get ViewLogModel() {
         return new ViewLogModel(this);
+    }
+
+    get WorkExperienceModel() {
+        // Note: if you use dataLoader in Model, you can only create
+        // one instance of model.
+        if (!this._work_experience_model) {
+            this._work_experience_model = new ExperienceModel(
+                this,
+                ExperienceModel.TYPE.WORK
+            );
+        }
+        return this._work_experience_model;
+    }
+
+    get InterviewExperienceModel() {
+        // Note: if you use dataLoader in Model, you can only create
+        // one instance of model.
+        if (!this._interview_experience_model) {
+            this._interview_experience_model = new ExperienceModel(
+                this,
+                ExperienceModel.TYPE.INTERVIEW
+            );
+        }
+        return this._interview_experience_model;
     }
 }
 
