@@ -22,11 +22,18 @@ class UserModel {
         return user;
     }
 
-    async create({ name, facebook_id, facebook, email }) {
+    async findOneByGoogleId(google_id) {
+        const user = await this.collection.findOne({ google_id });
+        return user;
+    }
+
+    async create({ name, facebook_id, facebook, email, google_id, google }) {
         const new_user = {
             name,
             facebook_id,
             facebook,
+            google_id,
+            google,
             email,
             email_status: "UNVERIFIED",
         };

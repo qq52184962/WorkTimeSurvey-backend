@@ -32,6 +32,7 @@
     "dotenv": "^7.0.0",
     "email-template": "https://github.com/goodjoblife/email-template.git#v1.1.1",
     "express": "^4.13.4",
+    "google-auth-library": "^4.2.5",
     "graphql": "^14.1.1",
     "graphql-resolvers": "^0.3.2",
     "joi": "^14.3.1",
