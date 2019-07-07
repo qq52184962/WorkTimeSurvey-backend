@@ -49,7 +49,7 @@ router.post(
             });
         }
 
-        if (!user.name) {
+        if (!user.name && account.name) {
             await user_model.collection.updateOne(
                 { _id: user._id },
                 { $set: { name: account.name } }
@@ -105,6 +105,20 @@ router.post(
                 google_id,
                 google: account,
             });
+        }
+
+        if (!user.name && account.name) {
+            await user_model.collection.updateOne(
+                { _id: user._id },
+                { $set: { name: account.name } }
+            );
+        }
+
+        if (!user.email && account.email) {
+            await user_model.collection.updateOne(
+                { _id: user._id },
+                { $set: { email: account.email } }
+            );
         }
 
         // Sign token
