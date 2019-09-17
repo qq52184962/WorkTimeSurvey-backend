@@ -36,6 +36,7 @@ function generateWorkExperiencePayload(options) {
         },
         week_work_time: 40,
         recommend_to_others: "yes",
+        email: "test@goodjob.org",
     };
 
     const payload = {};
@@ -153,6 +154,12 @@ describe("experiences 面試和工作經驗資訊", () => {
 
             assert.equal(experience.archive.is_archived, false);
             assert.equal(experience.archive.reason, "");
+
+            const user = await db
+                .collection("users")
+                .findOne({ _id: fake_user._id });
+            assert.equal(user.subscribeEmail, true);
+            assert.equal(user.email, experience.email);
 
             // expected response
             assert.property(res.body, "success");
@@ -374,6 +381,17 @@ describe("experiences 面試和工作經驗資訊", () => {
                     .send(
                         generateWorkExperiencePayload({
                             education: "無業遊名",
+                        })
+                    )
+                    .set("Authorization", `Bearer ${fake_user_token}`)
+                    .expect(422));
+
+            it("email format is invalid , expected return 422", () =>
+                request(app)
+                    .post("/work_experiences")
+                    .send(
+                        generateWorkExperiencePayload({
+                            email: "goodjob@ gmail.",
                         })
                     )
                     .set("Authorization", `Bearer ${fake_user_token}`)
