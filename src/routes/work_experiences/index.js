@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const HttpError = require("../../libs/errors").HttpError;
 const winston = require("winston");
+const UserModel = require("../../models/user_model");
 const ExperienceModel = require("../../models/experience_model");
 const helper = require("../company_helper");
 const {
@@ -11,6 +12,7 @@ const {
     optionalNumber,
     shouldIn,
     stringRequireLength,
+    validateEmail,
 } = require("../../libs/validation");
 const wrap = require("../../libs/wrap");
 const {
@@ -52,6 +54,10 @@ function validateCommonInputFields(data) {
         ])
     ) {
         throw new HttpError(`地區不允許 ${data.region}！`, 422);
+    }
+
+    if (data.email && !validateEmail(data.email)) {
+        throw new HttpError("E-mail 格式錯誤", 422);
     }
 
     if (!requiredNonEmptyString(data.job_title)) {
@@ -191,6 +197,7 @@ function pickupWorkExperience(input) {
         experience_in_year,
         education,
         status,
+        email,
         // work part
         is_currently_employed,
         job_ending_time,
@@ -239,6 +246,9 @@ function pickupWorkExperience(input) {
     if (recommend_to_others) {
         partial.recommend_to_others = recommend_to_others;
     }
+    if (email) {
+        partial.email = email;
+    }
 
     if (status) {
         partial.status = status;
@@ -277,6 +287,7 @@ function pickupWorkExperience(input) {
  * @apiParam {String="0 < length <= 25" || NULL} sections.subtitle 段落標題
  * @apiParam {String="0 < length <= 5000"} sections.content 段落內容
  * @apiParam {String="published","hidden"} [status="published"] 該篇文章的狀態
+ * @apiParam {String} email 電子郵件
  * @apiSuccess {Boolean} success 是否上傳成功
  * @apiSuccess {Object} experience 經驗分享物件
  * @apiSuccess {String} experience._id  經驗分享id
@@ -316,6 +327,13 @@ router.post("/", [
         experience.company = company;
 
         await experience_model.createExperience(experience);
+        if (experience.email) {
+            const user_model = new UserModel(req.manager);
+            await user_model.updateSubscribeEmail(
+                req.user._id,
+                experience.email
+            );
+        }
 
         winston.info("work experiences insert data success", {
             id: experience._id,
