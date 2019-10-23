@@ -3,6 +3,7 @@ const router = express.Router();
 const wrap = require("../../libs/wrap");
 const jwt = require("../../utils/jwt");
 const facebook = require("../../libs/facebook");
+const google = require("../../libs/google");
 const { requiredNonEmptyString } = require("../../libs/validation");
 const { HttpError } = require("../../libs/errors");
 
@@ -48,7 +49,7 @@ router.post(
             });
         }
 
-        if (!user.name) {
+        if (!user.name && account.name) {
             await user_model.collection.updateOne(
                 { _id: user._id },
                 { $set: { name: account.name } }
@@ -71,6 +72,63 @@ router.post(
                 _id: user._id,
                 facebook_id: user.facebook_id,
                 email: user.email || account.email,
+            },
+            token,
+        });
+    })
+);
+
+// TODO: maybe rewrite into graphql
+router.post(
+    "/google",
+    wrap(async (req, res) => {
+        if (!requiredNonEmptyString(req.body.id_token)) {
+            throw new HttpError("Unauthorized", 401);
+        }
+        const idToken = req.body.id_token;
+
+        const user_model = req.manager.UserModel;
+
+        // Check access_token with google server
+        let account = null;
+        try {
+            account = await google.verifyIdToken(idToken);
+        } catch (e) {
+            throw new HttpError("Unauthorized", 401);
+        }
+
+        // Retrieve User from DB
+        const google_id = account.sub;
+        let user = await user_model.findOneByGoogleId(google_id);
+        if (!user) {
+            user = await user_model.create({
+                google_id,
+                google: account,
+            });
+        }
+
+        if (!user.name && account.name) {
+            await user_model.collection.updateOne(
+                { _id: user._id },
+                { $set: { name: account.name } }
+            );
+        }
+
+        if (!user.email && account.email) {
+            await user_model.collection.updateOne(
+                { _id: user._id },
+                { $set: { email: account.email } }
+            );
+        }
+
+        // Sign token
+        const token = await jwt.signUser(user);
+
+        // Response
+        res.send({
+            user: {
+                _id: user._id,
+                google_id: user.google_id,
             },
             token,
         });
