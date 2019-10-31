@@ -228,24 +228,16 @@ const resolvers = {
                 unknown: counts["don't know"] || 0,
             };
         },
-        // TODO
-        overtime_frequency_count: () => {
+        overtime_frequency_count: salary_work_times => {
+            const ot = R.filter(
+                x => x.overtime_frequency > 0,
+                salary_work_times
+            );
+            const freq = R.sum(R.map(x => x.overtime_frequency, ot));
             return [
                 {
-                    overtime_frequency: 0,
-                    count: 5,
-                },
-                {
-                    overtime_frequency: 1,
-                    count: 10,
-                },
-                {
-                    overtime_frequency: 2,
-                    count: 20,
-                },
-                {
-                    overtime_frequency: 0,
-                    count: 30,
+                    overtime_frequency: freq,
+                    count: ot.length,
                 },
             ];
         },
