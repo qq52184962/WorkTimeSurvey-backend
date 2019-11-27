@@ -32,6 +32,32 @@ const Type = gql`
         has_compensatory_dayoff_count: YesNoOrUnknownCount
         has_overtime_salary_count: YesNoOrUnknownCount
         is_overtime_salary_legal_count: YesNoOrUnknownCount
+
+        "不同職業的平均薪資"
+        job_average_salaries: [JobAverageSalary!]!
+    }
+
+    type JobAverageSalary {
+        job_title: JobTitle!
+        average_salary: Salary!
+        data_count: Int!
+    }
+
+    "薪資分布"
+    type SalaryDistribution {
+        bins: [SalaryDistributionBin!]
+    }
+
+    "薪資分布的一個 bin（範圍＋數量）"
+    type SalaryDistributionBin {
+        data_count: Int!
+        range: SalaryRange!
+    }
+
+    type SalaryRange {
+        type: SalaryType!
+        from: Int!
+        to: Int!
     }
 
     type YearMonth {
@@ -195,6 +221,41 @@ const resolvers = {
                 no: counts["no"] || 0,
                 unknown: counts["don't know"] || 0,
             };
+        },
+        // TODO
+        job_average_salaries: () => {
+            return [
+                {
+                    job_title: {
+                        name: "軟體工程師",
+                    },
+                    data_count: 5,
+                    average_salary: {
+                        amount: 76000,
+                        type: "month",
+                    },
+                },
+                {
+                    job_title: {
+                        name: "數位IC設計工程師",
+                    },
+                    data_count: 10,
+                    average_salary: {
+                        amount: 100000,
+                        type: "month",
+                    },
+                },
+                {
+                    job_title: {
+                        name: "硬體工程師",
+                    },
+                    data_count: 10,
+                    average_salary: {
+                        amount: 80000,
+                        type: "month",
+                    },
+                },
+            ];
         },
     },
     Query: {

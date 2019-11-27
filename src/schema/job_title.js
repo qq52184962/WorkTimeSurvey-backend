@@ -14,6 +14,9 @@ const Type = gql`
         salary_work_time_statistics: SalaryWorkTimeStatistics!
         work_experience_statistics: WorkExperienceStatistics!
         interview_experience_statistics: InterviewExperienceStatistics!
+
+        "該職業的薪資分布"
+        salary_distribution: SalaryDistribution!
     }
 `;
 
@@ -21,6 +24,9 @@ const Query = gql`
     extend type Query {
         search_job_titles(query: String!): [JobTitle!]!
         job_title(name: String!): JobTitle
+
+        "目前用途：取得薪資資料前 topN 多的職稱"
+        popular_job_titles(limit: Int = 5): [JobTitle!]!
     }
 `;
 
@@ -62,6 +68,11 @@ const resolvers = {
                 name: result.job_title,
             };
         },
+        popular_job_titles: async () => [
+            {
+                name: "軟體工程師",
+            },
+        ],
     },
     JobTitle: {
         salary_work_times: async (jobTitle, _, { manager }) => {
@@ -87,6 +98,45 @@ const resolvers = {
         // TODO
         work_experience_statistics: () => {},
         interview_experience_statistics: () => {},
+
+        salary_distribution: () => {
+            return {
+                bins: [
+                    {
+                        data_count: 5,
+                        range: {
+                            type: "month",
+                            from: 30000,
+                            to: 40000,
+                        },
+                    },
+                    {
+                        data_count: 10,
+                        range: {
+                            type: "month",
+                            from: 40000,
+                            to: 50000,
+                        },
+                    },
+                    {
+                        data_count: 20,
+                        range: {
+                            type: "month",
+                            from: 50000,
+                            to: 60000,
+                        },
+                    },
+                    {
+                        data_count: 10,
+                        range: {
+                            type: "month",
+                            from: 60000,
+                            to: 70000,
+                        },
+                    },
+                ],
+            };
+        },
     },
 };
 
