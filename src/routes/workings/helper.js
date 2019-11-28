@@ -88,6 +88,37 @@ function calculateEstimatedHourlyWage(working) {
     return estimated_hourly_wage;
 }
 
+function calculateEstimatedMonthlyWage(working) {
+    switch (working.salary.type) {
+        case "hour":
+            if (working.week_work_time && working.day_real_work_time) {
+                return (
+                    (working.salary.amount *
+                        (52 * working.week_work_time -
+                            (12 + 7) * working.day_real_work_time)) /
+                    12
+                );
+            }
+            return;
+        case "day":
+            if (working.week_work_time && working.day_real_work_time) {
+                return (
+                    ((working.salary.amount / working.day_real_work_time) *
+                        (52 * working.week_work_time -
+                            (12 + 7) * working.day_real_work_time)) /
+                    12
+                );
+            }
+            return;
+        case "month":
+            return working.salary.amount;
+        case "year":
+            return working.salary.amount / 12;
+        default:
+            return;
+    }
+}
+
 function validSortQuery(query) {
     if (query.sort_by) {
         if (
@@ -119,6 +150,7 @@ function pickupSortQuery(query) {
 module.exports = {
     checkAndUpdateQuota,
     calculateEstimatedHourlyWage,
+    calculateEstimatedMonthlyWage,
     validSortQuery,
     pickupSortQuery,
 };
