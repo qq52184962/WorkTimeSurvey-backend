@@ -14,7 +14,7 @@ module.exports = async db => {
                 (doc.salary.amount *
                     (52 * doc.week_work_time - 19 * doc.day_real_work_time)) /
                 12;
-            db.workings.save(doc);
+            db.workings.updateOne(doc);
         });
     // update day
     await collection
@@ -29,7 +29,7 @@ module.exports = async db => {
                 ((doc.salary.amount / doc.day_real_work_time) *
                     (52 * doc.week_work_time - 19 * doc.day_real_work_time)) /
                 12;
-            db.workings.save(doc);
+            db.workings.updateOne(doc);
         });
     // update month
     await collection
@@ -39,7 +39,7 @@ module.exports = async db => {
         })
         .forEach(function(doc) {
             doc.estimated_monthly_wage = doc.salary.amount;
-            db.workings.save(doc);
+            db.workings.updateOne(doc);
         });
     // update year
     await collection
@@ -49,6 +49,6 @@ module.exports = async db => {
         })
         .forEach(function(doc) {
             doc.estimated_monthly_wage = doc.salary.amount / 12;
-            db.workings.save(doc);
+            db.workings.updateOne(doc);
         });
 };
