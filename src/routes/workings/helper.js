@@ -91,6 +91,7 @@ function calculateEstimatedHourlyWage(working) {
 function calculateEstimatedMonthlyWage(working) {
     switch (working.salary.type) {
         case "hour":
+            // 時薪 * (52 * 每週平均工時 - (12天國假 + 7天特休) * 工作日實際工時) / 12
             if (working.week_work_time && working.day_real_work_time) {
                 return (
                     (working.salary.amount *
@@ -101,6 +102,7 @@ function calculateEstimatedMonthlyWage(working) {
             }
             return;
         case "day":
+            // (日薪/工作日實際工時) * (52 * 每週平均工時 - (12天國假 + 7天特休) * 工作日實際工時) / 12
             if (working.week_work_time && working.day_real_work_time) {
                 return (
                     ((working.salary.amount / working.day_real_work_time) *
@@ -113,6 +115,7 @@ function calculateEstimatedMonthlyWage(working) {
         case "month":
             return working.salary.amount;
         case "year":
+            // 年薪 / 12 估算
             return working.salary.amount / 12;
         default:
             return;
